@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{78B33BC6-FD0D-456F-B152-5BB245677C25}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>eqgame_dll</RootNamespace>
+    <RootNamespace>src</RootNamespace>
     <ProjectName>eqgame_dll_rof2</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
