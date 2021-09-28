@@ -1,5 +1,6 @@
 # DLL
 
+This is the dinput.dll included in client. Visit https://github.com/demoncia/client for the deployed code
 
 ## Disable ASLR for eqgame.exe
 
