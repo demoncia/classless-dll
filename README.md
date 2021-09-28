@@ -1,6 +1,8 @@
 # DLL
 
-Disable ASLR for eqgame.exe
+
+## Disable ASLR for eqgame.exe
+
 
 This has already been done for the eqgame.exe in the demoncia patcher
 - Download https://blog.didierstevens.com/2010/10/17/setdllcharacteristics/
