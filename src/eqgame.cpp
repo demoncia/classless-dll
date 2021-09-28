@@ -840,35 +840,21 @@ void InitHooks()
 	   var = ((0x00507b30 - 0x400000) + baseAddress);
 	   return_SetCCreateCameraDet =
 		   (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
-	   var = (((DWORD)0x009C8C2C - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "clz\x00", 4); // Use load instead of "CLZ"
-	   CHAR szBuffer[MAX_STRING] = { 0 };
-	   sprintf(szBuffer, "Rewriting %i to clz", var);
-	   WriteChatColor(szBuffer, USERCOLOR_DEFAULT);
-
-	   /*
-	   //basedata as spell CRC begin
-	   var = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "spells_us.txt", 13);
-
-	   DWORD varToPatch = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
-	   var = (((DWORD)0x004EEAAB - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, (void*)&varToPatch, 4);
-	   //basedata as spell CRC end
-	   */
-
+	   //var = (((DWORD)0x009C8C2C - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "clz\x00", 4);
 	   
-	   //#pragma comment(lib, "Iphlpapi.lib")
+	   var = (((DWORD)0x00AC7B80 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "hollow\x00", 7);
 
-	   //var = (((DWORD)0x0069A3D1 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\xB8\x60\xEA\x00\x00\x90", 6); //reuse time hack, up to 1 minute
+	   var = (((DWORD)0x00A0AB90 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "hollow\x00Hollowed Caves\x00\x00\x00", 24);
+	   
+	   var = (((DWORD)0x0045385D - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90", 30); //hp damage in combat abilities fix
 
+	   var = (((DWORD)0x005FE751 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\xEB\x1C\x90\x90\x90", 5); // patchme req bypass
 
-	  var = (((DWORD)0x0045E376 - 0x400000) + baseAddress);
-	  PatchA((DWORD*)var, "\x90\x90\x90\x90\x90\x90\x90\x90", 8); // No unconscious pls
-
-	   var = (((DWORD)0x0045E381 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x90\x90\x90\x90\x90\x90\x90\x90", 8); // No unconscious pls
 
 	   var = (((DWORD)0x0045AE9F - 0x400000) + baseAddress);
 	   PatchA((DWORD*)var, "\x90\x90\xE9\x76\x03\x00\x00\x90",
