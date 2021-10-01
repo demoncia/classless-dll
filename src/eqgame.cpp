@@ -37,6 +37,21 @@ bool is_digits(const std::string &str)
 	return str.find_first_not_of("0123456789") == std::string::npos;
 }
 
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+	DWORD procid = 0;
+	GetWindowThreadProcessId(hwnd, &procid);
+	if (procid == *(LPARAM*)lParam) {
+		CHAR szClass[2048] = { 0 };
+		GetClassName(hwnd, szClass, 2047);
+		if (!_stricmp(szClass, "_EverQuestwndclass")) {
+			*(LPARAM*)lParam = (LPARAM)hwnd;
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 bool ResolutionStored = false;
 DWORD resx = 0;
 DWORD resy = 0;
@@ -585,7 +600,7 @@ unsigned char __fastcall SendMessage_Detour(DWORD *con, unsigned __int32 unk, un
 
 	if (opcode == 0xf13)
 	{
-		Checksum_Struct* cs = (Checksum_Struct*)buf;
+		/*Checksum_Struct* cs = (Checksum_Struct*)buf;
 		uint64_t checksum = DLL_VERSION_NUMBER;
 		Checksum_Struct* scs = new Checksum_Struct;
 		memset(scs, 0, sizeof(Checksum_Struct));
@@ -611,11 +626,12 @@ unsigned char __fastcall SendMessage_Detour(DWORD *con, unsigned __int32 unk, un
 		//memcpy(cs->DisplayW, &g_HWID.DisplayW, 4);
 		//memcpy(cs->DisplayH, &g_HWID.DisplayH, 4);
 		return retval;
+		*/
 	}
 
 	else if (opcode == 0x298d)
 	{
-		Checksum_Struct* cs = (Checksum_Struct*)buf;
+		/*Checksum_Struct* cs = (Checksum_Struct*)buf;
 		Checksum_Struct* scs = new Checksum_Struct;
 		memset(scs, 0, sizeof(Checksum_Struct));
 		scs->opcode = 0x298d;
@@ -626,7 +642,15 @@ unsigned char __fastcall SendMessage_Detour(DWORD *con, unsigned __int32 unk, un
 
 		delete scs;
 		return retval;
+		*/
 	}
+
+
+	DWORD lReturn = GetCurrentProcessId();
+	DWORD pid = lReturn;
+	BOOL ret = EnumWindows(EnumWindowsProc, (LPARAM)&lReturn);
+	SetWindowText((HWND)lReturn, "Demoncia");
+
 
 	retval = SendMessage_Trampoline(con, unk, channel, buf,
 		size, a6, a7);
@@ -674,63 +698,12 @@ void SkipSplash()
 	//const char test4[] = { 0xEB, 0x09, 0x90, 0x90, 0x90, 0x90 };
 	//PatchA((DWORD*)0x0047EC78, &test4, sizeof(test4));
 
-	//const char test5[] = { 0xEB, 0xD8, 0x90, 0x90, 0x90, 0x90 };
-	//PatchA((DWORD*)0x000047EC83, &test5, sizeof(test5)); // 0047EC83 | EB D8                    | jmp eqgame.47EC5D                       |
-	//item bonuses
-	/*const char test3[] = { 0x2a, 0x06 };
-	PatchA((DWORD*)0x0051E323, &test3, sizeof(test3));
-	PatchA((DWORD*)0x0051E521, &test3, sizeof(test3));
-	PatchA((DWORD*)0x0051E5FB, &test3, sizeof(test3));*/
-	/*const char test1[] = { 0x00, 0x00 }
-
-
-	//gypsies
-
-	DWORD offset = (DWORD)eqmain_dll + 0x21998;
-	PatchA((DWORD*)offset, &test1, sizeof(test1));
-
-	const char test2[] = { 0x01 }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
-
-	const char test3[] = { 0x90, 0x90, 0x90, 0xEB, 0x36 }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
-
-	const char test4[] = { 0x57 }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
-
-	const char test5[] = { 0x90, 0x90, 0x90, 0x90 }; // , 0x90, 0x90, 0x90, 0x90,
-
-
-	const char test6[] = { 0xE9, 0xB6, 0x02, 0x00, 0x00, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }; // , 0x90, 0x90, 0x90, 0x90,
-
-	const char test7[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
-
-	const char test8[] = { 0x3B, 0xC1, 0x81, 0xC7, 0xE8, 0x03, 0x00, 0x00 };
-
-	//Dual Wield for rangers
-	PatchA((DWORD*)0x004D2800, &test2, sizeof(test2));
-	PatchA((DWORD*)0x004D280C, &test2, sizeof(test2));
-	PatchA((DWORD*)0x004D2828, &test2, sizeof(test2));
-	//Meditate
-	PatchA((DWORD*)0x004D304C, &test2, sizeof(test2));
-	//Double Attack
-	PatchA((DWORD*)0x004D25FD, &test2, sizeof(test2));
-
-	//Mana at any level on rangers fix
-	PatchA((DWORD*)0x004B949C, &test3, sizeof(test3));
-
-	//Target label shows name
-	PatchA((DWORD*)0x0043622A, &test4, sizeof(test4));
-
 	//Instantly scribe spells
-	PatchA((DWORD*)0x00043514F, &test5, sizeof(test5));
+	//PatchA((DWORD*)0x00043514F, &test5, sizeof(test5));
 
 	//No local coord evac on zoning fail
 	//PatchA((DWORD*)0x0005461F4, &test6, sizeof(test6));
 
-	//Bard songs have modifier when calculating the value sent by the server, even if you're not a bard. Use 1.0 multiplier for non-bard spells on the server.
-	PatchA((DWORD*)0x004CA16A, &test7, sizeof(test7));
-
-	//Increase stat cap increase granted by AAs to be 1000 instead of 25 max.
-	PatchA((DWORD*)0x004B7D45, &test8, sizeof(test8));
-	*/
 
 	//PatchA((void*)0x0050C06E, "\x00", 1); //Group pet health removal
 	//PatchA((void*)0x00545001, "\xEB", 1); //Self pet health removal
@@ -842,13 +815,15 @@ void InitHooks()
 		   (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
 	   //var = (((DWORD)0x009C8C2C - 0x400000) + baseAddress);
 	   //PatchA((DWORD*)var, "clz\x00", 4);
-	   
+
+	   // Vah Shir 0x005c5c28
+	   	   
 	   var = (((DWORD)0x00AC7B80 - 0x400000) + baseAddress);
 	   PatchA((DWORD*)var, "hollow\x00", 7);
 
 	   var = (((DWORD)0x00A0AB90 - 0x400000) + baseAddress);
 	   PatchA((DWORD*)var, "hollow\x00Hollowed Caves\x00\x00\x00", 24);
-	   
+
 	   var = (((DWORD)0x0045385D - 0x400000) + baseAddress);
 	   PatchA((DWORD*)var, "\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90", 30); //hp damage in combat abilities fix
 
