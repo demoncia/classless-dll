@@ -37,21 +37,6 @@ bool is_digits(const std::string &str)
 	return str.find_first_not_of("0123456789") == std::string::npos;
 }
 
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
-{
-	DWORD procid = 0;
-	GetWindowThreadProcessId(hwnd, &procid);
-	if (procid == *(LPARAM*)lParam) {
-		CHAR szClass[2048] = { 0 };
-		GetClassName(hwnd, szClass, 2047);
-		if (!_stricmp(szClass, "_EverQuestwndclass")) {
-			*(LPARAM*)lParam = (LPARAM)hwnd;
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
 bool ResolutionStored = false;
 DWORD resx = 0;
 DWORD resy = 0;
@@ -644,13 +629,6 @@ unsigned char __fastcall SendMessage_Detour(DWORD *con, unsigned __int32 unk, un
 		return retval;
 		*/
 	}
-
-
-	DWORD lReturn = GetCurrentProcessId();
-	DWORD pid = lReturn;
-	BOOL ret = EnumWindows(EnumWindowsProc, (LPARAM)&lReturn);
-	SetWindowText((HWND)lReturn, "Demoncia");
-
 
 	retval = SendMessage_Trampoline(con, unk, channel, buf,
 		size, a6, a7);

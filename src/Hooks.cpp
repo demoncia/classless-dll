@@ -11,6 +11,21 @@
 
 std::vector<HookInfo> g_hooks;
 
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+	DWORD procid = 0;
+	GetWindowThreadProcessId(hwnd, &procid);
+	if (procid == *(LPARAM*)lParam) {
+		CHAR szClass[2048] = { 0 };
+		GetClassName(hwnd, szClass, 2047);
+		if (!_stricmp(szClass, "_EverQuestwndclass")) {
+			*(LPARAM*)lParam = (LPARAM)hwnd;
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 void InstallHook(HookInfo hi)
 {
 	auto iter = std::find_if(std::begin(g_hooks), std::end(g_hooks),
@@ -116,6 +131,11 @@ bool InstallD3D9Hooks()
 			{
 			}
 	}
+
+	DWORD lReturn = GetCurrentProcessId();
+	DWORD pid = lReturn;
+	BOOL ret = EnumWindows(EnumWindowsProc, (LPARAM)&lReturn);
+	SetWindowText((HWND)lReturn, "Demoncia");
 
 	return success;
 }
