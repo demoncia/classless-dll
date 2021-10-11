@@ -551,6 +551,23 @@ PLUGIN_API BOOL OnRecvInitBankerPacket(DWORD Type, PVOID Packet, DWORD Size)
 	return true;
 }
 
+unsigned int __cdecl HandleGetINIFile_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName);
+unsigned int __cdecl HandleGetINIFile_Detour(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName)
+{
+	// lpAppName should be "Defaults"
+	if (strcmp(lpAppName, "Defaults")) return HandleGetINIFile_Trampoline(lpAppName, lpKeyName, lpDefault, lpReturnedString, nSize, lpFileName);
+
+	// compare Name and find luclin in it
+	if (strstr(lpKeyName, "UseLuclin")) {
+		strncpy(lpReturnedString, "FALSE", 5);
+		return strlen(lpReturnedString);
+	}
+		
+	return HandleGetINIFile_Trampoline(lpAppName, lpKeyName, lpDefault, lpReturnedString, nSize, lpFileName);
+}
+
+DETOUR_TRAMPOLINE_EMPTY(unsigned int __cdecl HandleGetINIFile_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName));
+
 unsigned char __fastcall HandleWorldMessage_Trampoline(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size);
 unsigned char __fastcall HandleWorldMessage_Detour(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size)
 {
@@ -634,68 +651,10 @@ signed int ProcessGameEvents_Hook()
    return return_ProcessGameEvents();
 }
 
-void SkipLicense()
-{
-	//char str[255];
-	//DWORD ff;
-	//sprintf(str, "%d",*(DWORD*)(0x807DFC));
-	//MessageBox(NULL, str, NULL, MB_OK);
-	//DWORD offset = (DWORD)eqmain_dll + 0x255D2;
-	//const char test1[] = { 0xEB }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
-	//PatchA((DWORD*)offset, &test1, sizeof(test1));
-
-}
-
-void SkipSplash()
-{
-	// Set timer for intro splash screens to 0
-
-	////gypsies
-	//const char test1[] = { 0x90, 0x90, 0x90 };
-	//PatchA((DWORD*)0x004798ED, &test1, sizeof(test1));
-
-	////skeletons
-	//const char test2[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
-	//PatchA((DWORD*)0x0048276F, &test2, sizeof(test2));
-
-	////PVP Attack 
-	//const char test3[] = { 0xEB, 0x39, 0x90, 0x90, 0x90, 0x90 };
-	//PatchA((DWORD*)0x0047EC22, &test3, sizeof(test3));
-
-	//const char test4[] = { 0xEB, 0x09, 0x90, 0x90, 0x90, 0x90 };
-	//PatchA((DWORD*)0x0047EC78, &test4, sizeof(test4));
-
-	//Instantly scribe spells
-	//PatchA((DWORD*)0x00043514F, &test5, sizeof(test5));
-
-	//No local coord evac on zoning fail
-	//PatchA((DWORD*)0x0005461F4, &test6, sizeof(test6));
-
-
-	//PatchA((void*)0x0050C06E, "\x00", 1); //Group pet health removal
-	//PatchA((void*)0x00545001, "\xEB", 1); //Self pet health removal
-	//PatchA((void*)0x005540D1, "\xEB", 1); //Skills (open/inspect) removal
-	//PatchA((void*)0x0046356A, "\xE9\xD6\x0D\x00\x00\x90\x90\x90\x90", 9); //Find Window removal (Button exists, but does nothing.)
-	//PatchA((void*)0x00464141, "\xE9\xFF\x01\x00\x00\x90\x90\x90\x90", 9); //DZ Window (All forms of hotkey disabled.)
-	//PatchA((void*)0x004642F2, "\xEB\x51\x90", 3); //Task Selection Window disabled.
-	//PatchA((void*)0x004A71D6, "\xE9\x2D\x01\x00", 4); //Left Click Shows Target Help Disabled and cannot be re-enabled.
-	//return_ActivateDet = (Activate_t)DetourFunction((PBYTE)CXWndActivateAddr, (PBYTE)CXWndActivateHook); // Almost all non-classic windows have been disabled.
-	//return_ValueSellMerchantDet = (ValueSellMerchant_t)DetourFunction((PBYTE)ValueSellMerchantAddr, (PBYTE)ValueSellMerchantHook); // Items sold to greedy merchants that are sold at 0cp are now sold at 1cp
-	//return_SetCCreateCameraDet = (SetCCreateCamera_t)DetourFunction((PBYTE)0x507b30, (PBYTE)SetCCreateCameraHook); // Character Creation screen hook for position based on class/race/deity.
-	//return_SelectCharacterDet = (SelectCharacter_t)DetourFunction((PBYTE)SelectCharacterAddr, (PBYTE)SelectCharacterHook); // Character Selection screen hook for position based on class/race/deity.
-	//PatchA((void*)0x004AAA15, "\xB8", 1); //For Character Selection. Tells client to load "load.s3d" instead of "clz.eqg".
-	//PatchA((void*)0x0063EF73, "pickchar.xmi", 12); //Writes "pickchar.xmi" to unused memory in eqgame.exe
-	//PatchA((void*)0x009C8C2C, "load\x00", 5); // Use load instead of "CLZ" 
-	//PatchA((void*)0x0044B7D8, "\x68\x73\xEF\x63", 4); //Makes a PUSH load the above into memory instead of "eqtheme.mp3" for future use.
-	//PatchA((void*)0x0044B83D, "\xEB", 1); //Force-loads "opener4.xmi" when opening the character selection screen into theme position 1.
-	//PatchA((void*)0x0044B895, "\x14", 1); //Instead of assigning "opener4.xmi" to both positions which Titanium does by default, we overwrite position 4 (char select) with the pickchar.xmi asset
-
-}
-
-
 void PatchSaveBypass()
 {
 }
+
 DWORD wpsaddress = 0;
 DWORD swAddress = 0;
 DWORD cwAddress = 0;
@@ -765,21 +724,20 @@ void InitHooks()
    if (baseAddress) {
 
 	   DWORD var = (((DWORD)0x008C4CE0 - 0x400000) + baseAddress);
-
 	   EzDetour((DWORD)var, SendMessage_Detour, SendMessage_Trampoline);
 
-
 	   var = (((DWORD)0x004C3250 - 0x400000) + baseAddress);
-
 	   EzDetour((DWORD)var, HandleWorldMessage_Detour, HandleWorldMessage_Trampoline);
+	   
+	   var = (((DWORD)0x00860EF0 - 0x400000) + baseAddress);
+	   EzDetour((DWORD)var, HandleGetINIFile_Detour, HandleGetINIFile_Trampoline);
 
 	   // DWORD var = (((DWORD)CXWndActivateAddr - 0x400000) + baseAddress);
 
 	   // return_ActivateDet = (Activate_t)DetourFunction((PBYTE)var, (PBYTE)CXWndActivateHook); // Almost all non-classic windows have been disabled.
 
 	   var = ((0x00507b30 - 0x400000) + baseAddress);
-	   return_SetCCreateCameraDet =
-		   (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
+	   return_SetCCreateCameraDet = (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
 	   //var = (((DWORD)0x009C8C2C - 0x400000) + baseAddress);
 	   //PatchA((DWORD*)var, "clz\x00", 4);
 
@@ -915,6 +873,7 @@ void ExitHooks()
 
 	//RemoveDetour(0x4E829F); // HandleWorldMessage
 }
+
 BOOL ParseINIFile(PCHAR lpINIPath)
 {
    CHAR Filename[MAX_STRING] = {0};
