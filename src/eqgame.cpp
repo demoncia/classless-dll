@@ -556,17 +556,6 @@ unsigned char __fastcall HandleWorldMessage_Detour(DWORD *con, DWORD edx, unsign
 {
 	switch(opcode)
 	{
-#ifdef DPSPLUGIN
-		case 0x1337:
-			OnRecvEdgeDPSPacket(opcode, buf, size);
-			break;
-#endif
-		case 0x1338:
-			OnRecvEdgeStatLabelPacket(opcode, buf, size);
-			break;
-		case 0x1339:
-			OnRecvInitBankerPacket(opcode, buf, size);
-			break;
 		default:
 			break;
 	}
