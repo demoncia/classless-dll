@@ -551,6 +551,21 @@ PLUGIN_API BOOL OnRecvInitBankerPacket(DWORD Type, PVOID Packet, DWORD Size)
 	return true;
 }
 
+
+
+char* __fastcall HandleAddZone_Trampoline(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z);
+char* __fastcall HandleAddZone_Detour(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z)
+{
+	if (!strcmp(zoneShortName, "qeynos")) {		
+		DebugSpew("injecting zone hollows id 787");
+		HandleAddZone_Trampoline(pThis, pPtr, 0, 787, "hollows", "Darkened Hollows", 35153, 4, 0, 0, 0);		
+	} 
+	DebugSpew("loaded zone %s id %d", zoneShortName, zoneID);
+	return HandleAddZone_Trampoline(pThis, pPtr, zoneType, zoneID, zoneShortName, zoneLongName, eqStrID, zoneFlags2, x, y, z);
+}
+
+DETOUR_TRAMPOLINE_EMPTY(char* __fastcall HandleAddZone_Trampoline(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z));
+
 unsigned int __cdecl HandleGetINIFile_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName);
 unsigned int __cdecl HandleGetINIFile_Detour(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName)
 {
@@ -562,7 +577,7 @@ unsigned int __cdecl HandleGetINIFile_Detour(char* lpAppName, char* lpKeyName, c
 		strncpy(lpReturnedString, "FALSE", 5);
 		return strlen(lpReturnedString);
 	}
-		
+	
 	return HandleGetINIFile_Trampoline(lpAppName, lpKeyName, lpDefault, lpReturnedString, nSize, lpFileName);
 }
 
@@ -731,6 +746,9 @@ void InitHooks()
 	   
 	   var = (((DWORD)0x00860EF0 - 0x400000) + baseAddress);
 	   EzDetour((DWORD)var, HandleGetINIFile_Detour, HandleGetINIFile_Trampoline);
+
+	   var = (((DWORD)0x007DC290 - 0x400000) + baseAddress);
+	   EzDetour((DWORD)var, HandleAddZone_Detour, HandleAddZone_Trampoline);
 
 	   // DWORD var = (((DWORD)CXWndActivateAddr - 0x400000) + baseAddress);
 
