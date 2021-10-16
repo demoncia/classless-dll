@@ -558,7 +558,9 @@ char* __fastcall HandleAddZone_Detour(char* pThis, char* pPtr, unsigned __int32 
 {
 	if (!strcmp(zoneShortName, "interiorwalltest")) {
 		DebugSpew("injecting zone hollows id 787");
-		HandleAddZone_Trampoline(pThis, pPtr, 0, 787, "hollows", "Darkened Hollows", 35153, 4, 0, 0, 0);		
+		HandleAddZone_Trampoline(pThis, pPtr, 0, 787, "hollows", "Darkened Hollows", 35154, 4, 0, 0, 0);
+		DebugSpew("injecting zone delves id 788");
+		HandleAddZone_Trampoline(pThis, pPtr, 0, 788, "delves", "Demonic Delves", 35155, 4, 0, 0, 0);
 	} 
 	DebugSpew("loaded zone %s id %d", zoneShortName, zoneID);
 	return HandleAddZone_Trampoline(pThis, pPtr, zoneType, zoneID, zoneShortName, zoneLongName, eqStrID, zoneFlags2, x, y, z);
