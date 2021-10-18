@@ -86,7 +86,6 @@ VOID HideDoCommand(PSPAWNINFO pChar, PCHAR szLine, BOOL delayed)
                 FatalError("} and { seen on the same line without an else present");
             }
             //          DebugSpew("DoCommand - handing {} off to FailIf");
-            FailIf(pChar,"{",gMacroBlock,TRUE);
         } else {
             // handle this: 
             //            /if () {

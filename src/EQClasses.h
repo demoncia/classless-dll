@@ -2925,7 +2925,7 @@ class CMerchantWnd : public CSidlScreenWnd
 {
 public:
 EQLIB_OBJECT CMerchantWnd::CMerchantWnd(class CXWnd *);
-EQLIB_OBJECT void CMerchantWnd::Activate(class EQPlayer *,float, int, int);
+EQLIB_OBJECT void CMerchantWnd::Activate(class EQPlayer *,float);
 EQLIB_OBJECT void CMerchantWnd::AddContainerToMercArray(class EQ_Container *);
 EQLIB_OBJECT void CMerchantWnd::AddEquipmentToMercArray(class EQ_Equipment *);
 EQLIB_OBJECT void CMerchantWnd::AddNoteToMercArray(class EQ_Note *);
@@ -5246,12 +5246,6 @@ public:
 EQLIB_OBJECT EQ_AltAbility::EQ_AltAbility(int);
 };
 
-class PlayerPhysics
-{
-public:
-EQLIB_OBJECT void PlayerPhysics::ClampVelocity(int a1);
-};
-
 class EQ_Character1
 {
 public:
@@ -5271,9 +5265,6 @@ EQLIB_OBJECT void EQ_Character1::UseSkill(unsigned char,class EQPlayer *);
 EQLIB_OBJECT int const EQ_Character1::GetFocusRangeModifier(class EQ_Spell const *,class EQ_Equipment * *);
 EQLIB_OBJECT int EQ_Character1::IsExpansionFlag(int);
 EQLIB_OBJECT int EQ_Character1::TotalEffect(int,bool,int,bool,bool);
-EQLIB_OBJECT int EQ_Character1::Cur_Mana(int);
-EQLIB_OBJECT int EQ_Character1::Cur_Endurance(int);
-EQLIB_OBJECT double EQ_Character1::CalculateWeight();
 };
 
 class EQ_Character
@@ -5565,7 +5556,6 @@ EQLIB_OBJECT int EQ_Spell::IsPermIllusionSpell(void)const;
 EQLIB_OBJECT int EQ_Spell::SpellUsesDragonBreathEffect(void);
 EQLIB_OBJECT static bool __cdecl EQ_Spell::IsSPAIgnoredByStacking(int);
 EQLIB_OBJECT unsigned char EQ_Spell::SpellAffects(int)const;
-EQLIB_OBJECT unsigned char EQ_Spell::GetSpellLevelNeeded(unsigned int)const;
 SPELL Data;
 };
 

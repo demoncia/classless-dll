@@ -437,32 +437,6 @@ typedef struct _UILOCATION {
    CHAR error[MAX_STRING];
 } UILOCATION, *PUILOCATION;
 
-typedef enum MaterialType : int8_t {
-	materialInvalidType = -1,
-	materialCloth = 0,
-	materialLeather,
-	materialChain,
-	materialPlate,
-	materialLeatherMonk,
-	materialLeatherChitin,
-	materialChainScale = 7,
-	materialClothRobe1 = 10,
-	materialClothRobe2,
-	materialClothRobe3,
-	materialClothRobe4,
-	materialClothRobe5,
-	materialClothRobe6,
-	materialClothRobe7,
-	materialClothVelious,
-	materialChainVelious1,
-	materialPlateVelious1,
-	materialLeatherVelious1,
-	materialChainVelious2,
-	materialPlateVelious2,
-	materialLeatherVelious2,
-	materialMax
-};
-
 //5-15-2003   eqmule
 typedef struct _CXSTR {
 /*0x00*/   DWORD   Font;            // maybe, dont know.  04 = Window 01 = button
@@ -2230,7 +2204,6 @@ enum AggroDataTypes
 
 #define EQ_BEGIN_ZONE                   0x600D  // CEverQuest__SavePCForce         20130514
 #define EQ_END_ZONE                     0x166C  // CEverQuest__DoMainLoop+B2F      20130514
-#define EQ_RECV_PLAYER_PROFILE          0x6506
 #define EQ_LoadingS__ArraySize          0x5b    // EQ_LoadingS__SetProgressBar+8C  12-08-2010
 };
 using namespace EQData;

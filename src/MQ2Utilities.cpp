@@ -2648,7 +2648,7 @@ PCHAR ShowSpellSlotInfo(PSPELL pSpell, PCHAR szBuffer)
 			strcat(szBuff, szTemp);
 			break;
 		case 519:
-			sprintf(szTemp, "While Scribed in your Spell Book, Displays Names of Creatures on the Map. Range: ");
+			sprintf(szTemp, "While Scribed and Memorized, Displays Names of Creatures on the Map. Range: ");
 			SlotValueCalculate(szTemp, pSpell, i, 1);
 			strcat(szBuff, szTemp);
 			break;
@@ -2668,7 +2668,7 @@ PCHAR ShowSpellSlotInfo(PSPELL pSpell, PCHAR szBuffer)
 			strcat(szBuff, szTemp);
 			break;
 		case 523:
-			sprintf(szTemp, "While Scribed in your Spell Book, Allows for the Use of Lockpicks on Locked Doors. Requires Lockpick Item");
+			sprintf(szTemp, "While Scribed and Memorized, Allows for the Use of Lockpicks on Locked Doors. Requires Lockpick Item");
 			strcat(szBuff, szTemp);
 			break;
 		case 524:
@@ -2716,21 +2716,9 @@ PCHAR ShowSpellSlotInfo(PSPELL pSpell, PCHAR szBuffer)
 			sprintf(szTemp, "You feel dizzy, and some of your power fizzles out if not done immediately...");
 			strcat(szBuff, szTemp);
 			break;
-		case 535:
-			sprintf(szTemp, "Your wounds, they will not heal.");
-			strcat(szBuff, szTemp);
-			break;
-		case 536:
-			sprintf(szTemp, "Caster is shadowstepped behind their target.");
-			strcat(szBuff, szTemp);
-			break;
-		case 537:
-			sprintf(szTemp, "If you are your group's leader, this ability will summon everyone to your location instantly no matter where they are.");
-			strcat(szBuff, szTemp);
-			break;
 
         default: //undefined effect 
-            sprintf(szTemp, "The effects of this spell are unknown."); 
+            sprintf(szTemp, "UnknownEffect%03d", pSpell->Attrib[i]); 
             strcat(szBuff,szTemp); 
             break; 
         } 

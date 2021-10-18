@@ -264,18 +264,6 @@ static inline FLOAT GetDistance3D(FLOAT X1, FLOAT Y1, FLOAT Z1, FLOAT X2, FLOAT 
     FLOAT dZ = Z1 - Z2;
     return sqrtf(dX*dX + dY*dY + dZ*dZ);
 }
-
-
-static inline FLOAT GetDistance3D(PSPAWNINFO pChar, FLOAT X1, FLOAT Y1, FLOAT Z1)
-{
-	if (!pChar)
-		return 1.0f;
-
-	FLOAT X = pChar->X - X1;
-	FLOAT Y = pChar->Y - Y1;
-	FLOAT Z = pChar->Z - Z1;
-	return sqrtf(X * X + Y * Y + Z * Z);
-}
 #endif
 
 

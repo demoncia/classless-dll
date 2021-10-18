@@ -156,19 +156,6 @@ FUNCTION_AT_ADDRESS(int EQ_Character1::Max_Mana(int), EQ_Character__Max_Mana);
 #ifdef EQ_Character__Max_HP_x
 FUNCTION_AT_ADDRESS(int  EQ_Character1::Max_HP(int,int),EQ_Character__Max_HP);
 #endif
-#ifdef EQ_Character__Cur_Mana_x
-FUNCTION_AT_ADDRESS(int  EQ_Character1::Cur_Mana(int), EQ_Character__Cur_Mana);
-#endif
-#ifdef EQ_Character__Cur_Endurance_x
-FUNCTION_AT_ADDRESS(int  EQ_Character1::Cur_Endurance(int), EQ_Character__Cur_Endurance);
-#endif
-#ifdef EQ_Character__CalculateWeight_x
-FUNCTION_AT_ADDRESS(double  EQ_Character1::CalculateWeight(), EQ_Character__CalculateWeight);
-#endif
-
-#ifdef PlayerPhysics__ClampVelocity_x
-FUNCTION_AT_ADDRESS(void PlayerPhysics::ClampVelocity(int), PlayerPhysics__ClampVelocity);
-#endif
 /////////////////////////////////////////////////////////////////////
 
 #ifdef EQ_Character__doCombatAbility_x
@@ -2287,7 +2274,7 @@ FUNCTION_AT_ADDRESS( CMerchantWnd::CMerchantWnd(class CXWnd *),CMerchantWnd__CMe
 FUNCTION_AT_ADDRESS(void  CMerchantWnd::Init(void),CMerchantWnd__Init);
 #endif
 #ifdef CMerchantWnd__Activate_x
-FUNCTION_AT_ADDRESS(void  CMerchantWnd::Activate(class EQPlayer *,float, int, int),CMerchantWnd__Activate);
+FUNCTION_AT_ADDRESS(void  CMerchantWnd::Activate(class EQPlayer *,float),CMerchantWnd__Activate);
 #endif
 #ifdef CMerchantWnd__HandleBuy_x
 FUNCTION_AT_ADDRESS(void  CMerchantWnd::HandleBuy(int),CMerchantWnd__HandleBuy);
@@ -4805,9 +4792,6 @@ FUNCTION_AT_ADDRESS(void  EqEmitterData::SetLoadString(char *),EqEmitterData__Se
 #endif
 #ifdef EQ_Spell__SpellUsesDragonBreathEffect_x
 FUNCTION_AT_ADDRESS(int  EQ_Spell::SpellUsesDragonBreathEffect(void),EQ_Spell__SpellUsesDragonBreathEffect);
-#endif
-#ifdef EQ_Spell__GetSpellLevelNeeded_x
-FUNCTION_AT_ADDRESS(unsigned char EQ_Spell::GetSpellLevelNeeded(unsigned int) const, EQ_Spell__GetSpellLevelNeeded);
 #endif
 #ifdef EQ_Spell__EQ_Spell_x
 FUNCTION_AT_ADDRESS( EQ_Spell::EQ_Spell(char *),EQ_Spell__EQ_Spell);

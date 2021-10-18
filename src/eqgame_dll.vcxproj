@@ -51,6 +51,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>dinput8</TargetName>
+    <OutDir>C:\code\projects\demoncia\client\rof</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -71,17 +72,16 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>Default</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>..\detours\inc;..\dependencies\dx9\Include;..\dependencies\boost</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\detours\inc;..\dependencies\dx9\Include;..\dependencies\boost;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\Detours\lib;..\dependencies\dx9\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SuppressStartupBanner>false</SuppressStartupBanner>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Detours\lib;..\dependencies\dx9\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>dinput8.def</ModuleDefinitionFile>
-      <Profile>true</Profile>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -89,7 +89,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <Optimization>Disabled</Optimization>
+      <Optimization>Full</Optimization>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;DINPUT8_EXPORTS;EQLIB_EXPORTS;DPSPLUGIN;WINDOWS_IGNORE_PACKING_MISMATCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -102,18 +102,19 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <ErrorReporting>Queue</ErrorReporting>
       <LanguageStandard>Default</LanguageStandard>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
-      <OmitFramePointers>false</OmitFramePointers>
-      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>false</EnableCOMDATFolding>
       <OptimizeReferences>false</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\Detours\lib;..\dependencies\dx9\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\detours\lib;..\dependencies\dx9\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>dinput8.def</ModuleDefinitionFile>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
@@ -127,9 +128,7 @@
     <ClCompile Include="EQFunctionDetours.cpp" />
     <ClCompile Include="eqgame.cpp" />
     <ClCompile Include="EQUtils.cpp" />
-    <ClCompile Include="FloatingTextManager.cpp" />
     <ClCompile Include="FPSLimit.cpp" />
-    <ClCompile Include="Hooks.cpp" />
     <ClCompile Include="IClassFactory.cpp" />
     <ClCompile Include="IDirectInput8A.cpp" />
     <ClCompile Include="IDirectInput8Hook.cpp" />
@@ -141,7 +140,6 @@
     <ClCompile Include="IDirectInputEnumDevice.cpp" />
     <ClCompile Include="IDirectInputEnumEffect.cpp" />
     <ClCompile Include="InterfaceQuery.cpp" />
-    <ClCompile Include="MQ2AdvDps.cpp" />
     <ClCompile Include="MQ2ChatHook.cpp" />
     <ClCompile Include="MQ2CleanUI.cpp" />
     <ClCompile Include="MQ2CommandAPI.cpp" />
@@ -151,15 +149,12 @@
     <ClCompile Include="MQ2DataTypes.cpp" />
     <ClCompile Include="MQ2DataVars.cpp" />
     <ClCompile Include="MQ2DetourAPI.cpp" />
-    <ClCompile Include="MQ2FloatingText.cpp" />
     <ClCompile Include="MQ2Globals.cpp" />
     <ClCompile Include="MQ2ItemDisplay.cpp" />
     <ClCompile Include="MQ2Labels.cpp" />
-    <ClCompile Include="MQ2MacroCommands.cpp" />
     <ClCompile Include="MQ2Map.cpp" />
     <ClCompile Include="MQ2MapAPI.cpp" />
     <ClCompile Include="MQ2MapCommands.cpp" />
-    <ClCompile Include="MQ2MMODPS.cpp" />
     <ClCompile Include="MQ2Mouse.cpp" />
     <ClCompile Include="MQ2ParseAPI.cpp" />
     <ClCompile Include="MQ2PluginHandler.cpp" />
@@ -167,8 +162,6 @@
     <ClCompile Include="MQ2Spawns.cpp" />
     <ClCompile Include="MQ2Utilities.cpp" />
     <ClCompile Include="MQ2Windows.cpp" />
-    <ClCompile Include="Sprite.cpp" />
-    <ClCompile Include="Text.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
@@ -180,9 +173,7 @@
     <ClInclude Include="eqmac_functions.h" />
     <ClInclude Include="EQUIStructs.h" />
     <ClInclude Include="EQUtils.h" />
-    <ClInclude Include="FloatingTextManager.h" />
     <ClInclude Include="grounds.h" />
-    <ClInclude Include="Hooks.h" />
     <ClInclude Include="IClassFactory.h" />
     <ClInclude Include="IDirectInput8A.h" />
     <ClInclude Include="IDirectInput8Hook.h" />
@@ -194,18 +185,11 @@
     <ClInclude Include="IDirectInputEnumDevice.h" />
     <ClInclude Include="IDirectInputEnumEffect.h" />
     <ClInclude Include="itemtypes.h" />
-    <ClInclude Include="MQ2AdvDps.h" />
     <ClInclude Include="MQ2Commands.h" />
     <ClInclude Include="MQ2Globals.h" />
     <ClInclude Include="MQ2Main.h" />
     <ClInclude Include="MQ2Prototypes.h" />
-    <ClInclude Include="RECTF.h" />
-    <ClInclude Include="Renderable.h" />
-    <ClInclude Include="RenderHooks.h" />
     <ClInclude Include="skills.h" />
-    <ClInclude Include="Sprite.h" />
-    <ClInclude Include="Text.h" />
-    <ClInclude Include="TickCount.h" />
     <ClInclude Include="weapons.h" />
     <ClInclude Include="xorstr.h" />
   </ItemGroup>

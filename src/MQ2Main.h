@@ -43,10 +43,8 @@ GNU General Public License for more details.
 #include <math.h>
 #include <map>
 #include <string>
-#include <vector>
 #include <algorithm>
 #include <chrono>
-#include <random>
 using namespace std;
 
 #define PLUGIN_API 
@@ -54,7 +52,7 @@ using namespace std;
 #if !defined(ISXEQ) && !defined(ISXEQ_LEGACY)
 // MQ2
 #include <dinput.h>
-#include "..\Detours\inc\detours.h" 
+#include "detours.h" 
 #include "..\Blech\Blech.h"
 #elif !defined(ISXEQ_LEGACY)
 // ISXEQ
@@ -176,7 +174,6 @@ extern DWORD CountFrees;
 typedef struct EdgeDPSEntry
 {
 	DWORD SpawnID;
-	char InitialSpawnName [128];
 	int64_t TotalIncomingDamage;
 	int64_t TotalOutgoingDamage;
 	std::chrono::time_point<std::chrono::steady_clock> BeginningTimestamp;
@@ -219,18 +216,9 @@ typedef double DOUBLE;
 #define MAX_STRING            2048
 
 #define IsNaN(x) (x != x)
-#include <d3d9.h>
+
 #include "EQData.h"
 #include "EQUIStructs.h"
-
-#include <fenv.h>
-#include <winternl.h>
-#include <tchar.h>
-#include <Psapi.h>
-#include <d3dx9math.h>
-
-#pragma comment(lib, "d3d9.lib")
-#pragma comment(lib, "D3dx9.lib")
 
 //class CXMLData *GetXMLData(class CXWnd *pWnd)
 
@@ -266,7 +254,6 @@ EQLIB_API bool SendWndClick2(CXWnd *pWnd, PCHAR ClickNotification);
 EQLIB_API VOID InitializeChatHook();
 EQLIB_API VOID ShutdownChatHook();
 EQLIB_API VOID dsp_chat_no_events(const char *,int,bool,bool=1);
-PLUGIN_API VOID InitializeFloatingTextPlugin(VOID);
 
 PLUGIN_API VOID OnDPSCleanUI(VOID);
 PLUGIN_API VOID OnDPSReloadUI(VOID);
@@ -298,12 +285,6 @@ EQLIB_API VOID WriteChatColor(PCHAR Line, DWORD Color=USERCOLOR_DEFAULT, DWORD F
 #endif
 EQLIB_API VOID OnAddSpawn(PSPAWNINFO pNewSpawn);
 PLUGIN_API VOID OnRemoveSpawn(PSPAWNINFO pSpawn);
-PLUGIN_API VOID InitializeDPSPlugin(VOID);
-PLUGIN_API VOID OnDPSBeginZone(VOID);
-PLUGIN_API VOID OnFloatingTextManagerBeginZone();
-PLUGIN_API VOID OnFloatingTextManagerEndZone();
-PLUGIN_API VOID OnDPSEndZone(VOID);
-PLUGIN_API BOOL OnLabelReceivePPPacket(VOID);
 EQLIB_API VOID PulsePlugins();
 EQLIB_API BOOL PluginsIncomingChat(PCHAR Line, DWORD Color);
 EQLIB_API VOID PluginsCleanUI();
@@ -327,15 +308,10 @@ EQLIB_API VOID DrawHUD();
 /* COMMAND HANDLING */
 LEGACY_API VOID InitializeMQ2Commands();
 LEGACY_API VOID InitializeMapPlugin();
-LEGACY_API VOID InitializeEdgeDPSPlugin();
 void         HandleEdgeDPSDeath(EdgeDPSEntry entry);
 EdgeDPSEntry GetEdgeDPSEntryByID(DWORD id, bool bAdd = true);
 void SetEdgeDPSEntryByID(DWORD id, EdgeDPSEntry entry);
 PLUGIN_API VOID SetMapGameState(DWORD GameState);
-PLUGIN_API VOID SetDPSGameState(DWORD GameState);
-PLUGIN_API VOID SetEdgeDPSGameState(DWORD GameState);
-PLUGIN_API BOOL OnRecvEdgeDPSPacket(DWORD Type, PVOID Packet, DWORD Size);
-PLUGIN_API BOOL OnRecvEdgeStatLabelPacket(DWORD Type, PVOID Packet, DWORD Size);
 LEGACY_API VOID InitializeMQ2ItemDisplay();
 LEGACY_API VOID InitializeMQ2Labels();
 LEGACY_API VOID ShutdownMQ2Commands();
@@ -465,12 +441,6 @@ EQLIB_API struct  _ITEMINFO *GetItemFromContents(struct _CONTENTS *c);
 LEGACY_API PMACROBLOCK AddMacroLine(PCHAR szLine);
 #endif
 
-template<typename T>
-T Clamp(const T& value, const T& lower, const T& upper)
-{
-	return max(lower, min(value, upper));
-}
-
 EQLIB_API PCHAR GetLightForSpawn(PSPAWNINFO pSpawn);
 EQLIB_API DWORD GetSpellDuration(PSPELL pSpell, PSPAWNINFO pSpawn);
 EQLIB_API DWORD GetDeityTeamByID(DWORD DeityID);
@@ -510,7 +480,6 @@ EQLIB_API bool LoH_HT_Ready();
 
 /* MQ2DATAVARS */
 #ifndef ISXEQ
-LEGACY_API PCHAR GetFuncParam(PCHAR szMacroLine, DWORD ParamNum, PCHAR szParamName, PCHAR szParamType);
 LEGACY_API PDATAVAR FindMQ2DataVariable(PCHAR Name);
 LEGACY_API BOOL AddMQ2DataVariable(PCHAR Name, PCHAR Index, MQ2Type *pType, PDATAVAR *ppHead, PCHAR Default);
 LEGACY_API BOOL AddMQ2DataVariableFromData(PCHAR Name, PCHAR Index, MQ2Type *pType, PDATAVAR *ppHead, MQ2TYPEVAR Default); 
@@ -664,179 +633,3 @@ LEGACY_API BOOL Calculate(PCHAR szFormula, DOUBLE& Dest);
 EQLIB_API VOID memchecks_tramp(PCHAR,DWORD,PVOID,DWORD,BOOL); 
 EQLIB_API VOID memchecks(PCHAR,DWORD,PVOID,DWORD,BOOL);
 
-enum { CLISTTARGET, CLISTMAXDMG, SINGLE };
-enum { NOTOTAL, TOTALABOVE, TOTALSECOND, TOTALBOTTOM };
-
-static int Coloring[] = {
-   {0},   //unk
-   {13},   //war
-   {4},   //clr
-   {10},   //pal
-   {11},   //rng
-   {13},   //shd
-   {5},   //dru
-   {8},   //mnk
-   {2},   //brd
-   {12},   //rog
-   {14},   //shm
-   {9},   //nec
-   {14},   //wiz
-   {7},   //mag
-   {6},   //enc
-   {3},   //bst
-   {15},   //ber
-};
-
-struct EntDamage {
-	int Total;
-	time_t First;
-	time_t Last;
-	int AddTime;
-};
-
-void         DestroyDPSWindow();
-void         CreateDPSWindow();
-void         CreateDPSWindow();
-void         DestroyDPSWindow();
-template <unsigned int _EntSize, unsigned int _MobSize>bool SplitStringOtherHitOther(PCHAR Line, CHAR(&EntName)[_EntSize], CHAR(&MobName)[_MobSize], int *Damage);
-template <unsigned int _EntSize, unsigned int _MobSize>bool SplitStringDOT(PCHAR Line, CHAR(&EntName)[_EntSize], CHAR(&MobName)[_MobSize], int *Damage);
-template <unsigned int _EntSize, unsigned int _MobSize>bool SplitStringNonMelee(PCHAR Line, CHAR(&EntName)[_EntSize], CHAR(&MobName)[_MobSize], int *Damage);
-void         HandleYouHitOther(PCHAR Line);
-void         HandleOtherHitOther(PCHAR Line);
-void         HandleNonMelee(PCHAR Line);
-void         HandleDOT(PCHAR Line);
-void		 ListSwitch(PSPAWNINFO Switcher);
-void         TargetSwitch();
-void         CheckActive();
-void         DPSAdvCmd(PSPAWNINFO pChar, PCHAR szLine);
-#ifdef DPSDEV
-void         DPSTestCmd(PSPAWNINFO pChar, PCHAR szLine);
-#endif
-
-class DPSMob {
-public:
-	class DPSEntry {
-	public:
-		char Name[64];
-		bool DoSort;
-		bool Pets;
-		bool CheckPetName;
-		bool UsingPetName;
-		int SpawnType;
-		int Class;
-		bool Mercenary;
-		EntDamage Damage;
-		DPSMob *Parent;
-		PSPAWNINFO Spawn;
-		DPSEntry *Master;
-
-		DPSEntry();
-		DPSEntry(char EntName[64], DPSMob *pParent);
-		void      Init();
-		void      AddDamage(int aDamage);
-		int         GetDPS();
-		void      Sort();
-		void      GetSpawn();
-		bool      CheckMaster();
-	};
-
-	char Name[64];
-	char Tag[8];
-	int SpawnType;
-	PSPAWNINFO Spawn;
-	bool Active;
-	bool InActive;
-	bool Dead;
-	bool PetName;
-	bool Mercenary;
-	EntDamage Damage;
-	DPSEntry *LastEntry;
-	std::vector<DPSEntry*> EntList;
-
-	DPSMob();
-	DPSMob::DPSMob(PCHAR MobName, size_t MobLen);
-	void      Init();
-	void      AddDamage(int aDamage);
-	void      GetSpawn();
-	bool      IsPet();
-	DPSEntry   *GetEntry(char EntName[64], bool Create = true);
-};
-
-inline bool ValidIngame(bool bCheckDead)
-{
-	// CTD prevention function
-	return (GetGameState() == GAMESTATE_INGAME && GetCharInfo()->pSpawn && GetCharInfo2() && GetCharInfo() && GetCharInfo()->Stunned != 3);
-}
-
-
-class CDPSAdvWnd : public CCustomWnd {
-public:
-	CTabWnd *Tabs;
-	CListWnd *LTopList;
-	CComboWnd *CMobList;
-	CCheckBoxWnd *CShowMeTop;
-	CCheckBoxWnd *CShowMeMin;
-	CTextEntryWnd *TShowMeMin;
-	CCheckBoxWnd *CClearAfterCombatBox;
-	CCheckBoxWnd *CLiveUpdate;
-	CTextEntryWnd *TFightIA;
-	CTextEntryWnd *TFightTO;
-	CTextEntryWnd *TEntTO;
-	CComboWnd *CShowTotal;
-	//   CListWnd *LFightList;
-	bool ReSort;
-
-	CDPSAdvWnd();
-	~CDPSAdvWnd();
-	void DrawList();
-	void SetTotal(int LineNum, PSPAWNINFO Mob);
-	void DrawCombo();
-	void LoadLoc(char szChar[64] = 0);
-	void LoadSettings();
-	void SaveLoc();
-	void SetLineColors(int LineNum, EdgeDPSEntry Ent, bool Total = false, bool MeTop = false, bool UseEnt = true);
-	int WndNotification(CXWnd *pWnd, unsigned int Message, void *unknown);
-	void SaveSetting(PCHAR Key, PCHAR Value, ...);
-};
-
-typedef struct FormattedMessage_Struct
-{
-	DWORD unknown0;
-	DWORD string_id;
-	DWORD Filters;
-	char Buffers[0];
-} FormattedMessage_Struct, *pFormattedMessage_Struct;
-
-typedef struct EdgeDamage_Struct
-{
-	/* 00 */	uint16_t	target;
-	/* 02 */	uint16_t	source;
-	/* 04 */	uint8_t	type; //slashing, etc. 231 (0xE7) for spells, skill
-	/* 05 */	uint16_t	spellid;
-	/* 07 */	int64_t damage;
-				uint8_t hitType;
-} EdgeDamage_Struct, *pEdgeDamage_Struct;
-
-typedef struct Death_Struct
-{
-	/*000*/	DWORD	spawn_id;
-	/*004*/ DWORD	killer_id;
-	/*008*/	DWORD	corpseid;	// was corpseid
-	/*012*/	DWORD	bindzoneid;
-	/*016*/	DWORD	spell_id;
-	/*020*/	DWORD	attack_skill;
-	/*024*/	int32_t	damage;
-	/*028*/	DWORD	unknown028;
-} Death_Struct, *pDeath_Struct;
-
-typedef struct DeleteSpawn_Struct
-{
-	/*000*/	DWORD	spawn_id;
-	/*004*/	BYTE	bDisappear;
-} DeleteSpawn_Struct, *pDeleteSpawn_Struct;
-
-#define OP_CombatAction 0x1337
-#define OP_Death 0x6517
-#define OP_DeleteSpawn 0x7280
-
-MaterialType GetMitigationTextureType(MaterialType material);

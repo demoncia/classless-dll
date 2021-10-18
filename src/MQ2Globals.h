@@ -373,6 +373,8 @@ EQLIB_VAR EQPlayer **ppLocalPlayer;
 EQLIB_VAR EQPlayer **ppControlledPlayer;
 #define pControlledPlayer (*ppControlledPlayer)
 
+
+
 EQLIB_VAR EQWorldData **ppWorldData;
 #define pWorldData (*ppWorldData)
 EQLIB_VAR SpellManager **ppSpellMgr;
@@ -447,9 +449,6 @@ EQLIB_VAR MERCENARYINFO **ppMercInfo;
 
 EQLIB_VAR AGGROINFO **ppAggroInfo;
 #define pAggroInfo (*ppAggroInfo)
-
-EQLIB_VAR DWORD* pCurrentlyInteracting;
-#define CurrentlyInteracting (*pCurrentlyInteracting)
 
 /* WINDOW INSTANCES */ 
 EQLIB_VAR CContextMenuManager **ppContextMenuManager;
@@ -686,7 +685,6 @@ EQLIB_VAR DWORD __ServerName;
 EQLIB_VAR DWORD __ShiftKeyDown;
 EQLIB_VAR DWORD __ShowNames;
 EQLIB_VAR DWORD __Socials;
-EQLIB_VAR DWORD __CurrentlyInteracting;
 
 EQLIB_VAR DWORD instCRaid;
 EQLIB_VAR DWORD instEQZoneInfo;
@@ -879,7 +877,6 @@ EQLIB_VAR DWORD AltAdvManager__GetAltAbility;
 EQLIB_VAR DWORD CharacterZoneClient__HasSkill;
 
 EQLIB_VAR DWORD CBankWnd__GetNumBankSlots;
-EQLIB_VAR DWORD CBankWnd__Activate;
 
 EQLIB_VAR DWORD CBazaarSearchWnd__HandleBazaarMsg;
 
@@ -1019,7 +1016,6 @@ EQLIB_VAR DWORD CMerchantWnd__DisplayBuyOrSellPrice;
 EQLIB_VAR DWORD CMerchantWnd__RequestBuyItem;
 EQLIB_VAR DWORD CMerchantWnd__RequestSellItem;
 EQLIB_VAR DWORD CMerchantWnd__SelectBuySellSlot;
-EQLIB_VAR DWORD CMerchantWnd__Activate;
 
 EQLIB_VAR DWORD CObfuscator__doit;
 
@@ -1053,7 +1049,6 @@ EQLIB_VAR DWORD CSliderWnd__SetValue;
 EQLIB_VAR DWORD CSliderWnd__SetNumTicks;
 
 EQLIB_VAR DWORD CSpellBookWnd__MemorizeSet;
-EQLIB_VAR DWORD CSpellBookWnd__CanStartMemming;
 
 EQLIB_VAR DWORD CStmlWnd__AppendSTML;
 EQLIB_VAR DWORD CStmlWnd__CalculateHSBRange;
@@ -1141,6 +1136,7 @@ EQLIB_VAR DWORD CDBStr__GetString;
 
 EQLIB_VAR DWORD EQ_Character__CastRay;
 EQLIB_VAR DWORD EQ_Character__CastSpell;
+EQLIB_VAR DWORD EQ_Character__Cur_HP;
 EQLIB_VAR DWORD EQ_Character__GetAACastingTimeModifier;
 EQLIB_VAR DWORD EQ_Character__GetCharInfo2;
 EQLIB_VAR DWORD EQ_Character__GetFocusCastingTimeModifier;
@@ -1148,17 +1144,6 @@ EQLIB_VAR DWORD EQ_Character__GetFocusRangeModifier;
 EQLIB_VAR DWORD EQ_Character__Max_Endurance;
 EQLIB_VAR DWORD EQ_Character__Max_HP;
 EQLIB_VAR DWORD EQ_Character__Max_Mana;
-EQLIB_VAR DWORD EQ_Character__Cur_HP;
-EQLIB_VAR DWORD EQ_Character__Cur_Endurance;
-EQLIB_VAR DWORD EQ_Character__Cur_Mana;
-EQLIB_VAR DWORD EQ_Character__CalculateWeight;
-EQLIB_VAR DWORD EQ_Character__GetUsableClasses;
-EQLIB_VAR DWORD EQ_Character__IsSpellcaster;
-EQLIB_VAR DWORD EQ_Character__IsSpellcaster_2;
-EQLIB_VAR DWORD EQ_Character__IsSpellcaster_3;
-EQLIB_VAR DWORD PlayerPhysics__ClampVelocity;
-EQLIB_VAR DWORD EQ_Character__CanStartMem;
-EQLIB_VAR DWORD EQ_Character__GetLevelNeededForSpell;
 EQLIB_VAR DWORD EQ_Character__doCombatAbility;
 EQLIB_VAR DWORD EQ_Character__UseSkill;
 EQLIB_VAR DWORD EQ_Character__GetConLevel;
@@ -1185,8 +1170,6 @@ EQLIB_VAR DWORD EQItemList__delete_item;
 EQLIB_VAR DWORD EQItemList__FreeItemList;
 
 EQLIB_VAR DWORD EQMisc__GetActiveFavorCost;
-
-EQLIB_VAR DWORD EQ_Spell__GetSpellLevelNeeded;
 
 EQLIB_VAR DWORD EQPlayer__ChangeBoneStringSprite;
 EQLIB_VAR DWORD EQPlayer__dEQPlayer;

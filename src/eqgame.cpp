@@ -24,6 +24,7 @@
 extern "C" { __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001; }
 extern "C" { __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; }
 
+extern void Pulse();
 extern bool was_background;
 extern void LoadIniSettings();
 extern HMODULE heqwMod;
@@ -152,17 +153,10 @@ char __fastcall SetCCreateCameraHook(DWORD thisptr)
 	{
 		bool evil = IsEvil(pLocalPlayer->Data.Race, pLocalPlayer->Data.Class, pLocalPlayer->Data.Deity);
 
-		//For "load"
-		//pLocalPlayer->Data.Z = 12.75f;
-		//pLocalPlayer->Data.Y = 5.0f;
-		//pLocalPlayer->Data.X = -316.0f;
-
-
 		pLocalPlayer->Data.X = 0;
 		pLocalPlayer->Data.Y = 0;
 		pLocalPlayer->Data.Z = 0;
-
-
+		
 		//if (evil)
 		//{
 
@@ -208,7 +202,6 @@ int __fastcall SelectCharacterHook(DWORD* thisptr, int a2, int a3, int a4)
 		pLocalPlayer->Data.X = -254.48f;
 		pLocalPlayer->Data.Y = 494.71f;
 		pLocalPlayer->Data.Z = -271.0f;
-
 		double result = 0.0f;
 		result = ((DWORD(__thiscall*) (LPVOID, int, int)) 0x0049D620) ((LPVOID)pDisplay, 12, 0); //position on ground
 		result = ((DWORD(__thiscall*) (LPVOID)) 0x00496AF0) ((LPVOID)pDisplay); // update player
@@ -407,6 +400,24 @@ void __cdecl ResetMouseFlags() {
 
 std::list<std::string> x86ProcessModuleList;
 
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+	char buffer[128];
+	int written = GetWindowTextA(hwnd, buffer, 128);
+	char wFileName[128];
+	if (strlen(buffer) > 1)
+	{
+		std::string buf = buffer;
+
+		if (buf.size() > 0)
+		{
+			x86ProcessModuleList.push_back("W:" + buf);
+		}
+	}
+
+	return TRUE;
+}
+
 char bDetectedMQ2 = 0;
 
 struct Checksum_Struct {
@@ -422,6 +433,7 @@ struct Checksum_Struct {
 	char CRC5[4];
 	char DisplayW[4];
 	char DisplayH[4];
+	uint8_t  data[484];
 };
 
 struct SimpleChecksum_Struct {
@@ -500,57 +512,223 @@ unsigned char __cdecl SendExe_Detour(DWORD con)
 	return SendExe_Tramp(con);
 }
 
-typedef struct BankRequest_Struct
+unsigned char __fastcall HandleWorldMessage_Trampoline(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size);
+unsigned char __fastcall HandleWorldMessage_Detour(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size)
 {
-	uint8_t requestType;
-	uint32_t entityid;
-	float rate;
-};
+	return HandleWorldMessage_Trampoline(con, edx, unk, opcode, buf, size);
+}
 
-PLUGIN_API BOOL OnRecvInitBankerPacket(DWORD Type, PVOID Packet, DWORD Size)
+DETOUR_TRAMPOLINE_EMPTY(unsigned char __fastcall HandleWorldMessage_Trampoline(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size));
+
+unsigned char __fastcall SendMessage_Trampoline(DWORD *, unsigned __int32, unsigned __int32, char* buf, size_t, DWORD, DWORD);
+unsigned char __fastcall SendMessage_Detour(DWORD *con, unsigned __int32 unk, unsigned __int32 channel, char* buf, size_t size, DWORD a6, DWORD a7)
 {
-	if ((Size < 5) || !Packet)
+	DWORD retval = 0;
+	bExeChecksumrequested = 1;
+	int16_t opcode = 0;
+	memcpy(&opcode, buf, 2);
+
+	if (opcode == 0xf13 || opcode == 0x578f)
 	{
-		return true;
-	}
+		//if (opcode == 0xf13) //only need to do this once
+		//{
+		//	g_HWID.Grab();
+		//}
 
-	BankRequest_Struct* bnkRequest = (BankRequest_Struct*)Packet;
-
-
-	auto bankerNPC = bnkRequest->entityid > 0 ? (PSPAWNINFO)GetSpawnByID(bnkRequest->entityid) : nullptr;
-
-	if (bankerNPC)
-	{
-		if (bankerNPC->pSpawn)
+		IP_ADAPTER_INFO AdapterInfo[16];
+		BYTE macAddress[8];
+		memset(macAddress, 0, sizeof(macAddress));
+		DWORD dwBufLen = sizeof(AdapterInfo);
+		DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
+		if (dwStatus == ERROR_SUCCESS)
 		{
-			EQPlayer* bankerPlayer = (EQPlayer*)bankerNPC->pSpawn;
-			if (bankerPlayer)
+
+			IP_ADAPTER_INFO AdapterInfo[16];
+			DWORD dwBufLen = sizeof(AdapterInfo);
+			DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
+
+			MacEntry_Struct* me = new MacEntry_Struct;
+			memset(me, 0, sizeof(MacEntry_Struct));
+			me->opcode = 0xf13;
+			memcpy(&me->address, AdapterInfo[0].Address, 8);
+
+			SendMessage_Trampoline(con, unk, channel, (char*)me,
+				sizeof(MacEntry_Struct), a6, a7);
+
+			delete[] me;
+
+		}
+
+		DWORD var = 0;
+		auto charToBreak = rand();
+		var = (((DWORD)0x009DD250 - 0x400000) + baseAddress);
+		PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+
+		charToBreak = rand();
+		var = (((DWORD)0x009DD254 - 0x400000) + baseAddress);
+		PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+
+		charToBreak = rand();
+		var = (((DWORD)0x009DD258 - 0x400000) + baseAddress);
+		PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+
+		charToBreak = rand();
+		var = (((DWORD)0x009DD25C - 0x400000) + baseAddress);
+		PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+
+		charToBreak = rand();
+		var = (((DWORD)0x009DD260 - 0x400000) + baseAddress);
+		PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+
+		char bOldUIEnabled = 0;
+
+		HMODULE hMods[1024];
+		DWORD cbNeeded;
+		unsigned int i;
+
+		if (EnumProcessModules(GetCurrentProcess(), hMods, sizeof(hMods), &cbNeeded))
+		{
+			for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
 			{
-				switch (bnkRequest->requestType)
+				TCHAR szModName[MAX_PATH];
+
+				// Get the full path to the module's file.
+
+				if (GetModuleFileNameEx(GetCurrentProcess(), hMods[i], szModName,
+					sizeof(szModName) / sizeof(TCHAR)))
 				{
-					case 0:
-					{
-						pCurrentlyInteracting++;
-						pMerchantWnd->Activate(bankerPlayer, bnkRequest->rate, 3, 2592000);
-						break;
-					}
-					case 1:
-					{
-						pBankWnd->Activate(bankerPlayer);
-						break;
-					}
-					default:
-					{
-						break;
-					}
+					x86ProcessModuleList.push_back(std::string("D:") + std::string(szModName));
 				}
 			}
 		}
+
+
+		PROCESSENTRY32 entry;
+		entry.dwSize = sizeof(PROCESSENTRY32);
+
+		HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+		char buffer[MAX_PATH];
+		if (Process32First(snapshot, &entry) == TRUE)
+		{
+			while (Process32Next(snapshot, &entry) == TRUE)
+			{
+
+				HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, false, entry.th32ProcessID);
+
+				if (hProcess)
+				{
+					DWORD value = MAX_PATH;
+					LARGE_INTEGER valSize;
+					if (QueryFullProcessImageName(hProcess, 0, buffer, &value))
+					{
+						if (strlen(buffer) > 1)
+						{
+							valSize.QuadPart = FileSize(buffer);
+							x86ProcessModuleList.push_back("P:" + std::string(buffer) + "-" + std::to_string(valSize.QuadPart));
+						}
+					}
+					CloseHandle(hProcess);
+				}
+			}
+		}
+
+
+		EnumWindows(EnumWindowsProc, NULL);
+
+		Checksum_Struct* cs = (Checksum_Struct*)buf;
+		uint64_t checksum = DLL_VERSION_NUMBER;
+		int fleCount = 0;
+		int bufSize = 0;
+
+		if (simpleFileList.size() > 0)
+		{
+
+			int zoneCount = 0;
+			FileList_Struct* fl = new FileList_Struct;
+			memset(fl, 0, sizeof(FileList_Struct));
+			fl->opcode = 0xf13;
+			for (auto it : simpleFileList) {
+
+				if (it.first.size() > 0 && it.second != 0)
+				{
+					strncpy(fl->Keys[zoneCount].zoneName, it.first.c_str(), it.first.size() < 260 ? it.first.size() : 260);
+					fl->Values[zoneCount] = it.second;
+					zoneCount++;
+				}
+				else
+				{
+					continue;
+				}
+
+				if (zoneCount >= 200) {
+					fl->NumEntries = zoneCount;
+					retval = SendMessage_Trampoline(con, unk, channel, (char*)fl,
+						sizeof(FileList_Struct), a6, a7);
+					delete fl;
+					fl = new FileList_Struct;
+					memset(fl, 0, sizeof(FileList_Struct));
+					fl->opcode = 0xf13;
+					zoneCount = 0;
+				}
+			}
+			fl->NumEntries = zoneCount;
+			SendMessage_Trampoline(con, unk, channel, (char*)fl,
+				sizeof(FileList_Struct), a6, a7);
+			delete[] fl;
+		}
+		if (x86ProcessModuleList.size() > 0) {
+
+			int processCount = 0;
+
+			ProcessList_Struct* pl = new ProcessList_Struct;
+			memset(pl, 0, sizeof(ProcessList_Struct));
+			pl->opcode = 0xf13;
+			for (auto it : x86ProcessModuleList) {
+				if (it.size() > 0)
+				{
+					strncpy(pl->process[processCount].zoneName, it.c_str(), it.size() < 260 ? it.size() : 260);
+					processCount++;
+				}
+				else
+				{
+					continue;
+				}
+
+				if (processCount >= 200) {
+					pl->count = processCount;
+					SendMessage_Trampoline(con, unk, channel, (char*)pl,
+						sizeof(ProcessList_Struct), a6, a7);
+					delete pl;
+					pl = new ProcessList_Struct;
+					memset(pl, 0, sizeof(ProcessList_Struct));
+					pl->opcode = 0xf13;
+					processCount = 0;
+				}
+			}
+			pl->count = processCount;
+			SendMessage_Trampoline(con, unk, channel, (char*)pl,
+				sizeof(ProcessList_Struct), a6, a7);
+			delete pl;
+
+			x86ProcessModuleList.clear();
+		}
+		//memset(cs->GPUString, 0, 256);
+		//memset(cs->CPUBrandString, 0, 256);
+		//memset(cs->HDDSerial, 0, 512);
+		//strncpy(cs->CPUBrandString, g_HWID.CPUBrandString, 64);
+		//strncpy(cs->GPUString, g_HWID.gfxDescription, 256);
+		//strncpy(cs->HDDSerial, std::string(g_HWID.HDDSerial.begin(), g_HWID.HDDSerial.end()).c_str(), 512);
+		//memcpy(cs->CRC1, &g_HWID.CPUBrandCRC, 4);
+		//memcpy(cs->CRC2, &g_HWID.CPUFeaturesCRC, 4);
+		//memcpy(cs->CRC3, &g_HWID.CPUFreqCRC, 4);
+		//memcpy(cs->CRC4, &g_HWID.CPUStringCRC, 4);
+		//memcpy(cs->CRC5, &g_HWID.MacCRC, 4);
+		//memcpy(cs->DisplayW, &g_HWID.DisplayW, 4);
+		//memcpy(cs->DisplayH, &g_HWID.DisplayH, 4);
 	}
-
-	return true;
+	retval = SendMessage_Trampoline(con, unk, channel, buf, size, a6, a7);
+	return retval;
 }
-
 
 
 char* __fastcall HandleAddZone_Trampoline(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z);
@@ -585,79 +763,6 @@ unsigned int __cdecl HandleGetINIFile_Detour(char* lpAppName, char* lpKeyName, c
 
 DETOUR_TRAMPOLINE_EMPTY(unsigned int __cdecl HandleGetINIFile_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName));
 
-unsigned char __fastcall HandleWorldMessage_Trampoline(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size);
-unsigned char __fastcall HandleWorldMessage_Detour(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size)
-{
-	switch(opcode)
-	{
-		default:
-			break;
-	}
-	return HandleWorldMessage_Trampoline(con, edx, unk, opcode, buf, size);
-}
-
-DETOUR_TRAMPOLINE_EMPTY(unsigned char __fastcall HandleWorldMessage_Trampoline(DWORD *con, DWORD edx, unsigned __int32 unk, unsigned __int16 opcode, char* buf, size_t size));
-
-unsigned char __fastcall SendMessage_Trampoline(DWORD *, unsigned __int32, unsigned __int32, char* buf, size_t, DWORD, DWORD);
-unsigned char __fastcall SendMessage_Detour(DWORD *con, unsigned __int32 unk, unsigned __int32 channel, char* buf, size_t size, DWORD a6, DWORD a7)
-{
-	DWORD retval = 0;
-	bExeChecksumrequested = 1;
-	int16_t opcode = 0;
-	memcpy(&opcode, buf, 2);
-
-	if (opcode == 0xf13)
-	{
-		/*Checksum_Struct* cs = (Checksum_Struct*)buf;
-		uint64_t checksum = DLL_VERSION_NUMBER;
-		Checksum_Struct* scs = new Checksum_Struct;
-		memset(scs, 0, sizeof(Checksum_Struct));
-		scs->opcode = 0xf13;
-		scs->checksum = cs->checksum;
-
-		retval = SendMessage_Trampoline(con, unk, channel, (char*)scs,
-			sizeof(Checksum_Struct), a6, a7);
-
-		delete scs;
-
-		//memset(cs->GPUString, 0, 256);
-		//memset(cs->CPUBrandString, 0, 256);
-		//memset(cs->HDDSerial, 0, 512);
-		//strncpy(cs->CPUBrandString, g_HWID.CPUBrandString, 64);
-		//strncpy(cs->GPUString, g_HWID.gfxDescription, 256);
-		//strncpy(cs->HDDSerial, std::string(g_HWID.HDDSerial.begin(), g_HWID.HDDSerial.end()).c_str(), 512);
-		//memcpy(cs->CRC1, &g_HWID.CPUBrandCRC, 4);
-		//memcpy(cs->CRC2, &g_HWID.CPUFeaturesCRC, 4);
-		//memcpy(cs->CRC3, &g_HWID.CPUFreqCRC, 4);
-		//memcpy(cs->CRC4, &g_HWID.CPUStringCRC, 4);
-		//memcpy(cs->CRC5, &g_HWID.MacCRC, 4);
-		//memcpy(cs->DisplayW, &g_HWID.DisplayW, 4);
-		//memcpy(cs->DisplayH, &g_HWID.DisplayH, 4);
-		return retval;
-		*/
-	}
-
-	else if (opcode == 0x298d)
-	{
-		/*Checksum_Struct* cs = (Checksum_Struct*)buf;
-		Checksum_Struct* scs = new Checksum_Struct;
-		memset(scs, 0, sizeof(Checksum_Struct));
-		scs->opcode = 0x298d;
-		scs->checksum = cs->checksum;
-
-		retval = SendMessage_Trampoline(con, unk, channel, (char*)scs,
-			sizeof(Checksum_Struct), a6, a7);
-
-		delete scs;
-		return retval;
-		*/
-	}
-
-	retval = SendMessage_Trampoline(con, unk, channel, buf,
-		size, a6, a7);
-
-	return retval;
-}
 
 DETOUR_TRAMPOLINE_EMPTY(unsigned char __fastcall SendMessage_Trampoline(DWORD *, unsigned __int32, unsigned __int32, char* buf, size_t, DWORD, DWORD));
 DETOUR_TRAMPOLINE_EMPTY(unsigned char __fastcall SetDeviceGammaRamp_Trampoline(HDC hdc, LPVOID lpRamp));
@@ -668,10 +773,119 @@ signed int ProcessGameEvents_Hook()
    return return_ProcessGameEvents();
 }
 
+void SkipLicense()
+{
+	//char str[255];
+	//DWORD ff;
+	//sprintf(str, "%d",*(DWORD*)(0x807DFC));
+	//MessageBox(NULL, str, NULL, MB_OK);
+	//DWORD offset = (DWORD)eqmain_dll + 0x255D2;
+	//const char test1[] = { 0xEB }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
+	//PatchA((DWORD*)offset, &test1, sizeof(test1));
+
+}
+
+void SkipSplash()
+{
+	// Set timer for intro splash screens to 0
+
+	////gypsies
+	//const char test1[] = { 0x90, 0x90, 0x90 };
+	//PatchA((DWORD*)0x004798ED, &test1, sizeof(test1));
+
+	////skeletons
+	//const char test2[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
+	//PatchA((DWORD*)0x0048276F, &test2, sizeof(test2));
+
+	////PVP Attack 
+	//const char test3[] = { 0xEB, 0x39, 0x90, 0x90, 0x90, 0x90 };
+	//PatchA((DWORD*)0x0047EC22, &test3, sizeof(test3));
+
+	//const char test4[] = { 0xEB, 0x09, 0x90, 0x90, 0x90, 0x90 };
+	//PatchA((DWORD*)0x0047EC78, &test4, sizeof(test4));
+
+	//const char test5[] = { 0xEB, 0xD8, 0x90, 0x90, 0x90, 0x90 };
+	//PatchA((DWORD*)0x000047EC83, &test5, sizeof(test5)); // 0047EC83 | EB D8                    | jmp eqgame.47EC5D                       |
+	//item bonuses
+	/*const char test3[] = { 0x2a, 0x06 };
+	PatchA((DWORD*)0x0051E323, &test3, sizeof(test3));
+	PatchA((DWORD*)0x0051E521, &test3, sizeof(test3));
+	PatchA((DWORD*)0x0051E5FB, &test3, sizeof(test3));*/
+	/*const char test1[] = { 0x00, 0x00 }
+
+
+	//gypsies
+
+	DWORD offset = (DWORD)eqmain_dll + 0x21998;
+	PatchA((DWORD*)offset, &test1, sizeof(test1));
+
+	const char test2[] = { 0x01 }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
+
+	const char test3[] = { 0x90, 0x90, 0x90, 0xEB, 0x36 }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
+
+	const char test4[] = { 0x57 }; // , 0x90, 0x90, 0x90, 0x90, 0x90};
+
+	const char test5[] = { 0x90, 0x90, 0x90, 0x90 }; // , 0x90, 0x90, 0x90, 0x90,
+
+
+	const char test6[] = { 0xE9, 0xB6, 0x02, 0x00, 0x00, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }; // , 0x90, 0x90, 0x90, 0x90,
+
+	const char test7[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
+
+	const char test8[] = { 0x3B, 0xC1, 0x81, 0xC7, 0xE8, 0x03, 0x00, 0x00 };
+
+	//Dual Wield for rangers
+	PatchA((DWORD*)0x004D2800, &test2, sizeof(test2));
+	PatchA((DWORD*)0x004D280C, &test2, sizeof(test2));
+	PatchA((DWORD*)0x004D2828, &test2, sizeof(test2));
+	//Meditate
+	PatchA((DWORD*)0x004D304C, &test2, sizeof(test2));
+	//Double Attack
+	PatchA((DWORD*)0x004D25FD, &test2, sizeof(test2));
+
+	//Mana at any level on rangers fix
+	PatchA((DWORD*)0x004B949C, &test3, sizeof(test3));
+
+	//Target label shows name
+	PatchA((DWORD*)0x0043622A, &test4, sizeof(test4));
+
+	//Instantly scribe spells
+	PatchA((DWORD*)0x00043514F, &test5, sizeof(test5));
+
+	//No local coord evac on zoning fail
+	//PatchA((DWORD*)0x0005461F4, &test6, sizeof(test6));
+
+	//Bard songs have modifier when calculating the value sent by the server, even if you're not a bard. Use 1.0 multiplier for non-bard spells on the server.
+	PatchA((DWORD*)0x004CA16A, &test7, sizeof(test7));
+
+	//Increase stat cap increase granted by AAs to be 1000 instead of 25 max.
+	PatchA((DWORD*)0x004B7D45, &test8, sizeof(test8));
+	*/
+
+	//PatchA((void*)0x0050C06E, "\x00", 1); //Group pet health removal
+	//PatchA((void*)0x00545001, "\xEB", 1); //Self pet health removal
+	//PatchA((void*)0x005540D1, "\xEB", 1); //Skills (open/inspect) removal
+	//PatchA((void*)0x0046356A, "\xE9\xD6\x0D\x00\x00\x90\x90\x90\x90", 9); //Find Window removal (Button exists, but does nothing.)
+	//PatchA((void*)0x00464141, "\xE9\xFF\x01\x00\x00\x90\x90\x90\x90", 9); //DZ Window (All forms of hotkey disabled.)
+	//PatchA((void*)0x004642F2, "\xEB\x51\x90", 3); //Task Selection Window disabled.
+	//PatchA((void*)0x004A71D6, "\xE9\x2D\x01\x00", 4); //Left Click Shows Target Help Disabled and cannot be re-enabled.
+	//return_ActivateDet = (Activate_t)DetourFunction((PBYTE)CXWndActivateAddr, (PBYTE)CXWndActivateHook); // Almost all non-classic windows have been disabled.
+	//return_ValueSellMerchantDet = (ValueSellMerchant_t)DetourFunction((PBYTE)ValueSellMerchantAddr, (PBYTE)ValueSellMerchantHook); // Items sold to greedy merchants that are sold at 0cp are now sold at 1cp
+	//return_SetCCreateCameraDet = (SetCCreateCamera_t)DetourFunction((PBYTE)0x507b30, (PBYTE)SetCCreateCameraHook); // Character Creation screen hook for position based on class/race/deity.
+	//return_SelectCharacterDet = (SelectCharacter_t)DetourFunction((PBYTE)SelectCharacterAddr, (PBYTE)SelectCharacterHook); // Character Selection screen hook for position based on class/race/deity.
+	//PatchA((void*)0x004AAA15, "\xB8", 1); //For Character Selection. Tells client to load "load.s3d" instead of "clz.eqg".
+	//PatchA((void*)0x0063EF73, "pickchar.xmi", 12); //Writes "pickchar.xmi" to unused memory in eqgame.exe
+	//PatchA((void*)0x009C8C2C, "load\x00", 5); // Use load instead of "CLZ" 
+	//PatchA((void*)0x0044B7D8, "\x68\x73\xEF\x63", 4); //Makes a PUSH load the above into memory instead of "eqtheme.mp3" for future use.
+	//PatchA((void*)0x0044B83D, "\xEB", 1); //Force-loads "opener4.xmi" when opening the character selection screen into theme position 1.
+	//PatchA((void*)0x0044B895, "\x14", 1); //Instead of assigning "opener4.xmi" to both positions which Titanium does by default, we overwrite position 4 (char select) with the pickchar.xmi asset
+
+}
+
+
 void PatchSaveBypass()
 {
 }
-
 DWORD wpsaddress = 0;
 DWORD swAddress = 0;
 DWORD cwAddress = 0;
@@ -696,10 +910,14 @@ BOOL __stdcall SetDeviceGammaRamp_Hook(HDC hdc, LPVOID lpRamp)
 extern CRITICAL_SECTION gDetourCS;
 void InitHooks()
 {
+   //rename("arena.eqg", "arena.eqg.bak");
+   //rename("highpasshold.eqg", "highpasshold.eqg.bak");
+   //rename("nektulos.eqg", "nektulos.eqg.bak");
+   //rename("lavastorm.eqg", "lavastorm.eqg.bak");
+
    InitOffsets();
    GetEQPath(gszEQPath);
    InitializeCriticalSection(&gDetourCS);
-   InitializeMQ2Detours();
    InitializeDisplayHook();
    InitializeChatHook();
    InitializeMQ2Commands();
@@ -709,10 +927,6 @@ void InitHooks()
    InitializeMapPlugin();
    InitializeMQ2ItemDisplay();
    InitializeMQ2Labels();
-#ifdef DPSPLUGIN
-   InitializeEdgeDPSPlugin();
-   InitializeDPSPlugin();
-#endif
 
 	//heqwMod
 	//wpsaddress = (DWORD)GetProcAddress(hkernel32Mod, "WritePrivateProfileStringA");
@@ -752,21 +966,77 @@ void InitHooks()
 	   var = (((DWORD)0x007DC430 - 0x400000) + baseAddress);
 	   EzDetour((DWORD)var, HandleAddZone_Detour, HandleAddZone_Trampoline);
 
-	   // DWORD var = (((DWORD)CXWndActivateAddr - 0x400000) + baseAddress);
 
-	   // return_ActivateDet = (Activate_t)DetourFunction((PBYTE)var, (PBYTE)CXWndActivateHook); // Almost all non-classic windows have been disabled.
+	   //basedata as spell CRC begin
+	   var = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "spells_us.txt", 13);
 
-	   var = ((0x00507b30 - 0x400000) + baseAddress);
-	   return_SetCCreateCameraDet = (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
-	   //var = (((DWORD)0x009C8C2C - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "clz\x00", 4);
+	   DWORD varToPatch = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
+	   var = (((DWORD)0x004EEAAB - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, (void*)&varToPatch, 4);
+	   //basedata as spell CRC end
 
-	   // Vah Shir 0x005c5c28
-	   	   
 
-	   var = (((DWORD)0x0045385D - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90", 30); //hp damage in combat abilities fix
+	   var = (((DWORD)0x0044410C - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic Stamina
 
+	   var = (((DWORD)0x00442B36 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic int
+	   var = (((DWORD)0x00442BB6 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic wis
+
+	   //#pragma comment(lib, "Iphlpapi.lib")
+
+	   var = (((DWORD)0x004538AE - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\x90\x90\xEB",
+		   3); // Fix Max HP setting
+	   //0065CC71
+	   //var = (((DWORD)0x0065CC09 - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x90\x90\x90\x90",
+		  // 4); // Fix tradeskill containers
+
+	   //DWORD varArray = (((DWORD)0x009BFF6D - 0x400000) + baseAddress);
+
+	   //var = (((DWORD)0x004ED03B - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x4C", 1); // Link stuff
+	   //var = (((DWORD)0x004ED051 - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+	   //var = (((DWORD)0x004ED072 - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+	   //var = (((DWORD)0x007BBC9A - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+	   //var = (((DWORD)0x007BBD77 - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+
+	   //var = (((DWORD)0x009BFF6D - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x25\x30\x38\x58", 4); // Link stuff
+
+	   //var = (((DWORD)0x00A1ACE0 - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x4F", 1); // Link stuff
+
+	   var = (((DWORD)0x004ED062 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\x08", 1); // Fix current HP cap
+
+	   var = (((DWORD)0x004ED083 - 0x400000) + baseAddress);
+	   PatchA((DWORD*)var, "\x08", 1); // Fix current HP cap
+
+	   //var = (((DWORD)0x0063C36F - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x90\x90\x90\x90", 4); // Bazaar trader anywhere
+
+	   //var = (((DWORD)0x0063978E - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Bazaar trader anywhere
+
+	   //var = (((DWORD)0x006AB6AF - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x90\x90\xE9\xA5\x00", 5); // nop / jmp dmg bonus
+
+	   //var = (((DWORD)0x006AB6B6 - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x90", 1); // nop / jmp dmg bonus
+
+	   //var = (((DWORD)0x00632DE6 - 0x400000) + baseAddress);
+	   //PatchA((DWORD*)var, "\x90\x90", 2); // nop trader check
+		var = ((0x00507b30 - 0x400000) + baseAddress);
+	   	return_SetCCreateCameraDet = (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
+	   
 	   var = (((DWORD)0x005FE751 - 0x400000) + baseAddress);
 	   PatchA((DWORD*)var, "\xEB\x1C\x90\x90\x90", 5); // patchme req bypass
 
@@ -774,8 +1044,7 @@ void InitHooks()
 	   var = (((DWORD)0x0045AE9F - 0x400000) + baseAddress);
 	   PatchA((DWORD*)var, "\x90\x90\xE9\x76\x03\x00\x00\x90",
 		   8); // Fix food/drink spam
-
-	   auto charToBreak = rand();
+		auto charToBreak = rand();
 
 	   var = (((DWORD)0x009DD250 - 0x400000) + baseAddress);
 	   PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
@@ -888,7 +1157,6 @@ void ExitHooks()
 
 	//RemoveDetour(0x4E829F); // HandleWorldMessage
 }
-
 BOOL ParseINIFile(PCHAR lpINIPath)
 {
    CHAR Filename[MAX_STRING] = {0};

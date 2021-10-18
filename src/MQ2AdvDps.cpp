@@ -5,87 +5,14 @@ using namespace std;
 #include <vector>
 #include <sstream>
 #include <list>
-#include "MQ2Main.h"
-
-int ColorTest[17];
-PSPAWNINFO   LastMob;
-PSPAWNINFO   CurTarMob;
-PSPAWNINFO   CurListMob;
-PSPAWNINFO   CurMaxMob;
-PSPAWNINFO   CurTarget;
-time_t      Intervals;
-int         CListType;
-int         MaxDmgLast;
-int         MeColor;
-int         MeTopColor;
-int         NormalColor;
-int         NPCColor;
-int         TotalColor;
-int         EntHover;
-int         EntHighlight;
-int         FightNormal;
-int         FightHover;
-int         FightHighlight;
-int         FightActive;
-int         FightInActive;
-int         FightDead;
-bool      Saved;
-bool      WarnedYHO, WarnedOHO;
-bool      Debug;
-bool      Active;
-bool      Zoning;
-bool      WrongUI;
-
-bool      ShowMeTop;
-bool      ShowMeMin;
-int         ShowMeMinNum;
-bool      ClearAfterCombat;
-bool      LiveUpdate;
-int         ShowTotal;
-int         EntTO;
-CDPSAdvWnd *DPSWnd = 0;
+#include "MQ2AdvDps.h"
 
 #define DPSVERSION "1.2.06"
 //#define DPSDEV
 
 extern std::map<uint32_t, EdgeDPSEntry> DamageEntries;
 
-
-std::string commify(const std::string &number)
-{
-	std::string temp_string;
-
-	auto string_length = static_cast<int>(number.length());
-
-	int i = 0;
-	for (i = string_length - 3; i >= 0; i -= 3) {
-		if (i > 0) {
-			temp_string = "," + number.substr(static_cast<unsigned long>(i), 3) + temp_string;
-		}
-		else {
-			temp_string = number.substr(static_cast<unsigned long>(i), 3) + temp_string;
-		}
-	}
-
-	if (i < 0) {
-		temp_string = number.substr(0, static_cast<unsigned long>(3 + i)) + temp_string;
-	}
-
-	return temp_string;
-}
-
 // ############################### CDPSAdvWnd START ############################################
-bool bCleaned = false;
-void ZoneProcess() {
-	LastMob = 0;
-	CurTarget = 0;
-	CurTarMob = 0;
-	CurListMob = 0;
-	CurMaxMob = 0;
-	DPSMob *pMob = 0;
-	DPSMob::DPSEntry *pEnt = 0;
-
-}
 
 CDPSAdvWnd::CDPSAdvWnd() :CCustomWnd("DPSAdvWnd") {
 	int CheckUI = false;
@@ -95,22 +22,31 @@ CDPSAdvWnd::CDPSAdvWnd() :CCustomWnd("DPSAdvWnd") {
 	if (!(CShowMeTop = (CCheckBoxWnd*)GetChildItem("DPS_ShowMeTopBox"))) CheckUI = true;
 	if (!(CShowMeMin = (CCheckBoxWnd*)GetChildItem("DPS_ShowMeMinBox"))) CheckUI = true;
 	if (!(TShowMeMin = (CTextEntryWnd*)GetChildItem("DPS_ShowMeMinInput"))) CheckUI = true;
-	if (!(CClearAfterCombatBox = (CCheckBoxWnd*)GetChildItem("DPS_ClearAfterCombatBox"))) CheckUI = true;
+	if (!(CUseRaidColors = (CCheckBoxWnd*)GetChildItem("DPS_UseRaidColorsBox"))) CheckUI = true;
 	if (!(CLiveUpdate = (CCheckBoxWnd*)GetChildItem("DPS_LiveUpdateBox"))) CheckUI = true;
+	if (!(TFightIA = (CTextEntryWnd*)GetChildItem("DPS_FightIAInput"))) CheckUI = true;
+	if (!(TFightTO = (CTextEntryWnd*)GetChildItem("DPS_FightTOInput"))) CheckUI = true;
 	if (!(TEntTO = (CTextEntryWnd*)GetChildItem("DPS_EntTOInput"))) CheckUI = true;
 	if (!(CShowTotal = (CComboWnd*)GetChildItem("DPS_ShowTotal"))) CheckUI = true;
 	//if (!(LFightList = (CListWnd*)GetChildItem("DPS_FightList"))) CheckUI = true;
 	this->BGColor.ARGB = 0xFF000000;
 	Tabs->BGColor.ARGB = 0xFF000000;
 	LTopList->BGColor.ARGB = 0xFF000000;
+	CShowMeTop->BGColor.ARGB = 0xFF000000;
+	CShowMeMin->BGColor.ARGB = 0xFF000000;
+	TShowMeMin->BGColor.ARGB = 0xFF000000;
+	CUseRaidColors->BGColor.ARGB = 0xFF000000;
+	CLiveUpdate->BGColor.ARGB = 0xFF000000;
+	TFightIA->BGColor.ARGB = 0xFF000000;
+	TFightTO->BGColor.ARGB = 0xFF000000;
 	TEntTO->BGColor.ARGB = 0xFF000000;
 	CShowTotal->BGColor.ARGB = 0xFF000000;
 	if (CheckUI) {
 		WriteChatf("\ar[DPSAdv] Incorrect UI File in use. Please update to the latest client files.");
 		WrongUI = true;
-		return;
 	}
 	else WrongUI = false;
+
 	LoadLoc();
 	SetWndNotification(CDPSAdvWnd);
 	//LTopList->SetColors(0xFFFFFFFF, 0xFFCC3333, 0xFF666666);
@@ -163,23 +99,22 @@ void CDPSAdvWnd::SetTotal(int LineNum, PSPAWNINFO Mob) {
 
 	EdgeDPSEntry Entry = GetEdgeDPSEntryByID(Mob->SpawnID, false);
 
-
 	if (Entry.SpawnID)
 	{
 		SetLineColors(LineNum, Entry, true, false, false);
 		LTopList->SetItemText(LineNum, 0, &CXStr("-"));
 		LTopList->SetItemText(LineNum, 1, &CXStr("Total"));
-		sprintf_s(szTemp, "%I64d", Entry.TotalIncomingDamage);
-		LTopList->SetItemText(LineNum, 2, &CXStr(commify(szTemp).c_str()));
+		sprintf_s(szTemp, "%i", Entry.TotalIncomingDamage);
+		LTopList->SetItemText(LineNum, 2, &CXStr(szTemp));
 
-		std::chrono::duration<double> elapsed_seconds = Entry.LastUpdateTimestamp - Entry.BeginningTimestamp;
+		auto timestamp = std::chrono::high_resolution_clock::now();
 
-
+		std::chrono::duration<double> elapsed_seconds = timestamp - Entry.BeginningTimestamp;
 
 		auto dpsTOTAL = 0;
 		auto dpsAVRGE = 0;
 
-		int64_t damages = Entry.TotalIncomingDamage;
+		DWORD damages = Entry.TotalIncomingDamage;
 		DOUBLE estimate = damages / elapsed_seconds.count();
 		dpsTOTAL++;
 		DOUBLE evaluate = (estimate - dpsAVRGE) / dpsTOTAL + dpsAVRGE; dpsAVRGE = evaluate;
@@ -187,14 +122,14 @@ void CDPSAdvWnd::SetTotal(int LineNum, PSPAWNINFO Mob) {
 		{
 			evaluate = 0.f;
 		}
+		std::ostringstream outEstimate;
+		outEstimate.precision(3);
+		outEstimate << std::fixed << estimate;
+		LTopList->SetItemText(LineNum, 3, &CXStr(outEstimate.str().c_str()));
 
-		std::stringstream outEstimate;
-		outEstimate << (int64_t)estimate;
-		LTopList->SetItemText(LineNum, 3, &CXStr(commify(outEstimate.str()).c_str()));
 
-
-		sprintf_s(szTemp, "%I64d", Entry.TotalOutgoingDamage);
-		LTopList->SetItemText(LineNum, 4, &CXStr(commify(szTemp).c_str()));
+		sprintf_s(szTemp, "%i", Entry.TotalOutgoingDamage);
+		LTopList->SetItemText(LineNum, 4, &CXStr(szTemp));
 
 		dpsTOTAL = 0;
 		dpsAVRGE = 0;
@@ -207,8 +142,9 @@ void CDPSAdvWnd::SetTotal(int LineNum, PSPAWNINFO Mob) {
 		{
 			evaluate = 0.f;
 		}
-		std::stringstream inEstimate;
-		inEstimate << (int64_t)estimate;
+		std::ostringstream inEstimate;
+		inEstimate.precision(3);
+		inEstimate << std::fixed << estimate;
 		LTopList->SetItemText(LineNum, 5, &CXStr(inEstimate.str().c_str()));
 	}
 }
@@ -238,6 +174,7 @@ void CDPSAdvWnd::DrawList() {
 
 	for (auto entry : DamageEntries) {
 		auto spawnEntry = (PSPAWNINFO)GetSpawnByID(entry.first);
+
 		if (ShowMeTop && spawnEntry && !strcmp(spawnEntry->Name, ((PSPAWNINFO)pCharSpawn)->DisplayedName)) {
 			if (!ShowMeMin || (LineNum - RankAdj + 1) > ShowMeMinNum) FoundMe = true;
 			ThisMe = true;
@@ -251,16 +188,17 @@ void CDPSAdvWnd::DrawList() {
 		sprintf_s(szTemp, "%s%s", spawnEntry ? spawnEntry->Name : " ", spawnEntry && spawnEntry->PetID > 0 ? "*" : " ");
 		LTopList->SetItemText(LineNum, 1, &CXStr(szTemp));
 		if (ThisMe) LTopList->SetItemText(ShowMeLineNum, 1, &CXStr(szTemp));
-		sprintf_s(szTemp, "%I64d", entry.second.TotalIncomingDamage);
-		LTopList->SetItemText(LineNum, 2, &CXStr(commify(szTemp).c_str()));
-		if (ThisMe) LTopList->SetItemText(ShowMeLineNum, 2, &CXStr(commify(szTemp).c_str()));
+		sprintf_s(szTemp, "%i", entry.second.TotalIncomingDamage);
+		LTopList->SetItemText(LineNum, 2, &CXStr(szTemp));
+		if (ThisMe) LTopList->SetItemText(ShowMeLineNum, 2, &CXStr(szTemp));
+		auto timestamp = std::chrono::high_resolution_clock::now();
 
-		std::chrono::duration<double> elapsed_seconds = entry.second.LastUpdateTimestamp - entry.second.BeginningTimestamp;
+		std::chrono::duration<double> elapsed_seconds = timestamp - entry.second.BeginningTimestamp;
 
 		auto dpsTOTAL = 0;
 		auto dpsAVRGE = 0;
 
-		int64_t damages = entry.second.TotalIncomingDamage;
+		DWORD damages = entry.second.TotalIncomingDamage;
 		DOUBLE estimate = damages / elapsed_seconds.count();
 		dpsTOTAL++;
 		DOUBLE evaluate = (estimate - dpsAVRGE) / dpsTOTAL + dpsAVRGE; dpsAVRGE = evaluate;
@@ -268,13 +206,14 @@ void CDPSAdvWnd::DrawList() {
 		{
 			evaluate = 0.f;
 		}
-		std::stringstream outEstimate;
-		outEstimate << (int64_t)estimate;
-		LTopList->SetItemText(LineNum, 3, &CXStr(commify(outEstimate.str()).c_str()));
-		if (ThisMe) LTopList->SetItemText(ShowMeLineNum, 3, &CXStr(commify(outEstimate.str()).c_str()));
+		std::ostringstream outEstimate;
+		outEstimate.precision(3);
+		outEstimate << std::fixed << estimate;
+		LTopList->SetItemText(LineNum, 3, &CXStr(outEstimate.str().c_str()));
+		if (ThisMe) LTopList->SetItemText(ShowMeLineNum, 3, &CXStr(outEstimate.str().c_str()));
 
-		sprintf_s(szTemp, "%I64d", entry.second.TotalOutgoingDamage);
-		LTopList->SetItemText(LineNum, 4, &CXStr(commify(std::string(szTemp)).c_str()));
+		sprintf_s(szTemp, "%i", entry.second.TotalOutgoingDamage);
+		LTopList->SetItemText(LineNum, 4, &CXStr(szTemp));
 		
 		dpsTOTAL = 0;
 		dpsAVRGE = 0;
@@ -287,11 +226,12 @@ void CDPSAdvWnd::DrawList() {
 		{
 			evaluate = 0.f;
 		}
-		std::stringstream inEstimate;
-		inEstimate << (int64_t)estimate;
-
-		LTopList->SetItemText(LineNum, 5, &CXStr(commify(inEstimate.str()).c_str()));
-		if (ThisMe) LTopList->SetItemText(ShowMeLineNum, 5, &CXStr(commify(inEstimate.str()).c_str()));
+		std::ostringstream inEstimate;
+		inEstimate.precision(3);
+		inEstimate << std::fixed << estimate;
+		
+		LTopList->SetItemText(LineNum, 5, &CXStr(inEstimate.str().c_str()));
+		if (ThisMe) LTopList->SetItemText(ShowMeLineNum, 5, &CXStr(inEstimate.str().c_str()));
 
 	}
 	if (ShowTotal == TOTALBOTTOM) {
@@ -345,55 +285,55 @@ void CDPSAdvWnd::SetLineColors(int LineNum, EdgeDPSEntry ent, bool Total, bool M
 		LTopList->SetItemColor(LineNum, 5, NormalColor);
 	}
 }
-
+/*
+void CDPSAdvWnd::SaveSetting(PCHAR Key, PCHAR Value, ...) {
+   char zOutput[MAX_STRING]; va_list vaList; va_start(vaList,Value);
+   vsprintf_s(zOutput,Value,vaList);
+   WritePrivateProfileString(GetCharInfo()->Name, Key, zOutput, "Edge.ini");
+   if (!Saved) {
+	  Saved = true;
+	  WritePrivateProfileString(GetCharInfo()->Name, "Saved", "1", "Edge.ini");
+   }
+}
+*/
 void CDPSAdvWnd::SaveLoc() {
 	if (!GetCharInfo()) return;
-
-	PCHARINFO2 MyInfo2 = GetCharInfo2();
-	PSPAWNINFO MySpawn = ((PSPAWNINFO)pCharSpawn);
-
-	char szFileName[256] = "";
-
-	if (MySpawn && MyInfo2)
-	{
-		sprintf_s(szFileName, "UI_%s_%s.ini", MySpawn->Name, EQADDR_SERVERNAME);
-	}
-
-	char szFileIncPathName[MAX_PATH] = "";
-
-	if (GetFullPathName(szFileName, 256, szFileIncPathName, NULL))
-	{
-		CHAR szTemp[MAX_STRING] = { 0 };
-		WritePrivateProfileString(GetCharInfo()->Name, "Saved", "1", szFileIncPathName);
-		sprintf_s(szTemp, "%i", Location.top);
-		WritePrivateProfileString(GetCharInfo()->Name, "Top", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", Location.bottom);
-		WritePrivateProfileString(GetCharInfo()->Name, "Bottom", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", Location.left);
-		WritePrivateProfileString(GetCharInfo()->Name, "Left", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", Location.right);
-		WritePrivateProfileString(GetCharInfo()->Name, "Right", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", Alpha);
-		WritePrivateProfileString(GetCharInfo()->Name, "Alpha", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", FadeToAlpha);
-		WritePrivateProfileString(GetCharInfo()->Name, "FadeToAlpha", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", CListType);
-		WritePrivateProfileString(GetCharInfo()->Name, "CListType", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", LiveUpdate ? 1 : 0);
-		WritePrivateProfileString(GetCharInfo()->Name, "LiveUpdate", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", dShow);
-		WritePrivateProfileString(GetCharInfo()->Name, "Show", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", ShowMeTop ? 1 : 0);
-		WritePrivateProfileString(GetCharInfo()->Name, "ShowMeTop", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", ShowMeMin ? 1 : 0);
-		WritePrivateProfileString(GetCharInfo()->Name, "ShowMeMin", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", ShowMeMinNum);
-		WritePrivateProfileString(GetCharInfo()->Name, "ShowMeMinNum", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", ClearAfterCombat ? 1 : 0);
-		WritePrivateProfileString(GetCharInfo()->Name, "ClearAfterCombat", szTemp, szFileIncPathName);
-		sprintf_s(szTemp, "%i", EntTO);
-		WritePrivateProfileString(GetCharInfo()->Name, "EntTO", szTemp, szFileIncPathName);
-	}
+	CHAR szTemp[MAX_STRING] = { 0 };
+	WritePrivateProfileString(GetCharInfo()->Name, "Saved", "1", "Edge.ini");
+	sprintf_s(szTemp, "%i", Location.top);
+	WritePrivateProfileString(GetCharInfo()->Name, "Top", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", Location.bottom);
+	WritePrivateProfileString(GetCharInfo()->Name, "Bottom", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", Location.left);
+	WritePrivateProfileString(GetCharInfo()->Name, "Left", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", Location.right);
+	WritePrivateProfileString(GetCharInfo()->Name, "Right", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", Alpha);
+	WritePrivateProfileString(GetCharInfo()->Name, "Alpha", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", FadeToAlpha);
+	WritePrivateProfileString(GetCharInfo()->Name, "FadeToAlpha", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", CListType);
+	WritePrivateProfileString(GetCharInfo()->Name, "CListType", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", LiveUpdate ? 1 : 0);
+	WritePrivateProfileString(GetCharInfo()->Name, "LiveUpdate", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", dShow);
+	WritePrivateProfileString(GetCharInfo()->Name, "Show", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", ShowMeTop ? 1 : 0);
+	WritePrivateProfileString(GetCharInfo()->Name, "ShowMeTop", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", ShowMeMin ? 1 : 0);
+	WritePrivateProfileString(GetCharInfo()->Name, "ShowMeMin", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", ShowMeMinNum);
+	WritePrivateProfileString(GetCharInfo()->Name, "ShowMeMinNum", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", UseRaidColors ? 1 : 0);
+	WritePrivateProfileString(GetCharInfo()->Name, "UseRaidColors", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", ShowTotal);
+	WritePrivateProfileString(GetCharInfo()->Name, "ShowTotal", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", FightIA);
+	WritePrivateProfileString(GetCharInfo()->Name, "FightIA", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", FightTO);
+	WritePrivateProfileString(GetCharInfo()->Name, "FightTO", szTemp, "Edge.ini");
+	sprintf_s(szTemp, "%i", EntTO);
+	WritePrivateProfileString(GetCharInfo()->Name, "EntTO", szTemp, "Edge.ini");
 }
 
 void CDPSAdvWnd::LoadSettings() {
@@ -402,8 +342,12 @@ void CDPSAdvWnd::LoadSettings() {
 	CShowMeMin->Checked = ShowMeMin ? 1 : 0;
 	sprintf_s(szTemp, "%i", ShowMeMinNum);
 	SetCXStr(&TShowMeMin->InputText, szTemp);
-	CClearAfterCombatBox->Checked = ClearAfterCombat ? 1 : 0;
+	CUseRaidColors->Checked = UseRaidColors ? 1 : 0;
 	CLiveUpdate->Checked = LiveUpdate ? 1 : 0;
+	sprintf_s(szTemp, "%i", FightIA);
+	SetCXStr(&TFightIA->InputText, szTemp);
+	sprintf_s(szTemp, "%i", FightTO);
+	SetCXStr(&TFightTO->InputText, szTemp);
 	sprintf_s(szTemp, "%i", EntTO);
 	SetCXStr(&TEntTO->InputText, szTemp);
 	CShowTotal->DeleteAll();
@@ -417,68 +361,55 @@ void CDPSAdvWnd::LoadSettings() {
 
 void CDPSAdvWnd::LoadLoc(char szChar[256]) {
 	if (!GetCharInfo()) return;
+	char szName[256] = { 0 };
+	if (!szChar) strcpy_s(szName, GetCharInfo()->Name);
+	else strcpy_s(szName, szChar);
+	Saved = (GetPrivateProfileInt(szName, "Saved", 0, "Edge.ini") > 0 ? true : false);
+	if (Saved && DPSWnd) {
+		DPSWnd->Location = { (LONG)GetPrivateProfileInt(szName, "Left", 0, "Edge.ini"),
+			(LONG)GetPrivateProfileInt(szName, "Top", 0, "Edge.ini"),
+			(LONG)GetPrivateProfileInt(szName, "Right", 0, "Edge.ini"),
+			(LONG)GetPrivateProfileInt(szName, "Bottom", 0, "Edge.ini") };
 
-	PCHARINFO2 MyInfo2 = GetCharInfo2();
-	PSPAWNINFO MySpawn = ((PSPAWNINFO)pCharSpawn);
-
-	char szFileName[256] = "";
-
-	if (MySpawn && MyInfo2)
-	{
-		sprintf_s(szFileName, "UI_%s_%s.ini", MySpawn->Name, EQADDR_SERVERNAME);
+		DPSWnd->Alpha = (BYTE)GetPrivateProfileInt(szName, "Alpha", 0, "Edge.ini");
+		
+		DPSWnd->FadeToAlpha = (BYTE)GetPrivateProfileInt(szName, "FadeToAlpha", 0, "Edge.ini");
 	}
-
-	char szFileIncPathName[MAX_PATH] = "";
-
-	if (GetFullPathName(szFileName, 256, szFileIncPathName, NULL))
-	{
-
-		char szName[256] = { 0 };
-		if (!szChar) strcpy_s(szName, GetCharInfo()->Name);
-		else strcpy_s(szName, szChar);
-		Saved = (GetPrivateProfileInt(szName, "Saved", 0, szFileIncPathName) > 0 ? true : false);
-		if (Saved && DPSWnd) {
-			DPSWnd->Location = { (LONG)GetPrivateProfileInt(szName, "Left", 0, szFileIncPathName),
-				(LONG)GetPrivateProfileInt(szName, "Top", 0, szFileIncPathName),
-				(LONG)GetPrivateProfileInt(szName, "Right", 0, szFileIncPathName),
-				(LONG)GetPrivateProfileInt(szName, "Bottom", 0, szFileIncPathName) };
-
-			DPSWnd->Alpha = (BYTE)GetPrivateProfileInt(szName, "Alpha", 0, szFileIncPathName);
-
-			DPSWnd->FadeToAlpha = (BYTE)GetPrivateProfileInt(szName, "FadeToAlpha", 0, szFileIncPathName);
-		}
-		CListType = GetPrivateProfileInt(szName, "CListType", 0, szFileIncPathName);
-		LiveUpdate = (GetPrivateProfileInt(szName, "LiveUpdate", 0, szFileIncPathName) > 0 ? true : false);
-		Debug = (GetPrivateProfileInt(szName, "Debug", 0, szFileIncPathName) > 0 ? true : false);
-		if (DPSWnd)
-			DPSWnd->dShow = (GetPrivateProfileInt(szName, "Show", 1, szFileIncPathName) > 0 ? true : false);
-		ShowMeTop = (GetPrivateProfileInt(szName, "ShowMeTop", 0, szFileIncPathName) > 0 ? true : false);
-		ShowMeMin = (GetPrivateProfileInt(szName, "ShowMeMin", 0, szFileIncPathName) > 0 ? true : false);
-		ShowMeMinNum = GetPrivateProfileInt(szName, "ShowMeMinNum", 0, szFileIncPathName);
-		ClearAfterCombat = (GetPrivateProfileInt(szName, "ClearAfterCombat", 0, szFileIncPathName) > 0 ? true : false);
-		ShowTotal = GetPrivateProfileInt(szName, "ShowTotal", 0, szFileIncPathName);
-		EntTO = GetPrivateProfileInt(szName, "EntTO", 8, szFileIncPathName);
-		MeColor = GetPrivateProfileInt(szName, "MeColor", 0xFF00CC00, szFileIncPathName);
-		MeTopColor = GetPrivateProfileInt(szName, "MeTopColor", 0xFF00CC00, szFileIncPathName);
-		NormalColor = GetPrivateProfileInt(szName, "NormalColor", 0xFFFFFFFF, szFileIncPathName);
-		NPCColor = GetPrivateProfileInt(szName, "NPCColor", 0xFFFFFFFF, szFileIncPathName);
-		TotalColor = GetPrivateProfileInt(szName, "TotalColor", 0xFF66FFFF, szFileIncPathName);
-		EntHover = GetPrivateProfileInt(szName, "EntHover", 0xFFCC3333, szFileIncPathName);
-		EntHighlight = GetPrivateProfileInt(szName, "EntHighlight", 0xFF666666, szFileIncPathName);
-		FightNormal = GetPrivateProfileInt(szName, "FightNormal", NormalColor, szFileIncPathName);
-		FightHover = GetPrivateProfileInt(szName, "FightHover", EntHover, szFileIncPathName);
-		FightHighlight = GetPrivateProfileInt(szName, "FightHighlight", EntHighlight, szFileIncPathName);
-		FightActive = GetPrivateProfileInt(szName, "FightActive", 0xFF00CC00, szFileIncPathName);
-		FightInActive = GetPrivateProfileInt(szName, "FightInActive", 0xFF777777, szFileIncPathName);
-		FightDead = GetPrivateProfileInt(szName, "FightDead", 0xFF330000, szFileIncPathName);
-		if (EntTO < 3) EntTO = 15;
-		if (Debug) gSpewToFile = TRUE;
-		if (CListType > 1) CListType = CLISTTARGET;
-		LTopList->SetColors(NormalColor, EntHover, EntHighlight);
-		//   LFightList->SetColors(FightNormal, FightHover, FightHighlight);
-		CMobList->SetChoice(CListType);
-		LoadSettings();
-	}
+	CListType = GetPrivateProfileInt(szName, "CListType", 0, "Edge.ini");
+	LiveUpdate = (GetPrivateProfileInt(szName, "LiveUpdate", 0, "Edge.ini") > 0 ? true : false);
+	Debug = (GetPrivateProfileInt(szName, "Debug", 0, "Edge.ini") > 0 ? true : false);
+	if(DPSWnd)
+		DPSWnd->dShow = (GetPrivateProfileInt(szName, "Show", 1, "Edge.ini") > 0 ? true : false);
+	ShowMeTop = (GetPrivateProfileInt(szName, "ShowMeTop", 0, "Edge.ini") > 0 ? true : false);
+	ShowMeMin = (GetPrivateProfileInt(szName, "ShowMeMin", 0, "Edge.ini") > 0 ? true : false);
+	ShowMeMinNum = GetPrivateProfileInt(szName, "ShowMeMinNum", 0, "Edge.ini");
+	UseRaidColors = (GetPrivateProfileInt(szName, "UseRaidColors", 0, "Edge.ini") > 0 ? true : false);
+	ShowTotal = GetPrivateProfileInt(szName, "ShowTotal", 0, "Edge.ini");
+	FightIA = GetPrivateProfileInt(szName, "FightIA", 8, "Edge.ini");
+	FightTO = GetPrivateProfileInt(szName, "FightTO", 30, "Edge.ini");
+	EntTO = GetPrivateProfileInt(szName, "EntTO", 8, "Edge.ini");
+	MeColor = GetPrivateProfileInt(szName, "MeColor", 0xFF00CC00, "Edge.ini");
+	MeTopColor = GetPrivateProfileInt(szName, "MeTopColor", 0xFF00CC00, "Edge.ini");
+	NormalColor = GetPrivateProfileInt(szName, "NormalColor", 0xFFFFFFFF, "Edge.ini");
+	NPCColor = GetPrivateProfileInt(szName, "NPCColor", 0xFFFFFFFF, "Edge.ini");
+	TotalColor = GetPrivateProfileInt(szName, "TotalColor", 0xFF66FFFF, "Edge.ini");
+	EntHover = GetPrivateProfileInt(szName, "EntHover", 0xFFCC3333, "Edge.ini");
+	EntHighlight = GetPrivateProfileInt(szName, "EntHighlight", 0xFF666666, "Edge.ini");
+	FightNormal = GetPrivateProfileInt(szName, "FightNormal", NormalColor, "Edge.ini");
+	FightHover = GetPrivateProfileInt(szName, "FightHover", EntHover, "Edge.ini");
+	FightHighlight = GetPrivateProfileInt(szName, "FightHighlight", EntHighlight, "Edge.ini");
+	FightActive = GetPrivateProfileInt(szName, "FightActive", 0xFF00CC00, "Edge.ini");
+	FightInActive = GetPrivateProfileInt(szName, "FightInActive", 0xFF777777, "Edge.ini");
+	FightDead = GetPrivateProfileInt(szName, "FightDead", 0xFF330000, "Edge.ini");
+	if (FightIA < 3) FightIA = 8;
+	if (FightTO < 3) FightTO = 30;
+	if (EntTO < 3) EntTO = 8;
+	if (Debug) gSpewToFile = TRUE;
+	if (CListType > 1) CListType = CLISTTARGET;
+	LTopList->SetColors(NormalColor, EntHover, EntHighlight);
+	//   LFightList->SetColors(FightNormal, FightHover, FightHighlight);
+	CMobList->SetChoice(CListType);
+	LoadSettings();
 }
 
 int CDPSAdvWnd::WndNotification(CXWnd *pWnd, unsigned int Message, void *unknown) {
@@ -490,7 +421,7 @@ int CDPSAdvWnd::WndNotification(CXWnd *pWnd, unsigned int Message, void *unknown
 		if (pWnd == (CXWnd*)Tabs) LoadSettings();
 		else if (pWnd == (CXWnd*)CShowMeTop) ShowMeTop = CShowMeTop->Checked ? true : false;
 		else if (pWnd == (CXWnd*)CShowMeMin) ShowMeMin = CShowMeMin->Checked ? true : false;
-		else if (pWnd == (CXWnd*)CClearAfterCombatBox) ClearAfterCombat = CClearAfterCombatBox->Checked ? true : false;
+		else if (pWnd == (CXWnd*)CUseRaidColors) UseRaidColors = CUseRaidColors->Checked ? true : false;
 		else if (pWnd == (CXWnd*)CLiveUpdate) LiveUpdate = CLiveUpdate->Checked ? true : false;
 		//else if (pWnd == (CXWnd*)LTopList) WriteChatf("CurSel: %i", LTopList->GetCurSel());
 		else if (pWnd == (CXWnd*)CShowTotal) {
@@ -537,17 +468,38 @@ int CDPSAdvWnd::WndNotification(CXWnd *pWnd, unsigned int Message, void *unknown
 				TShowMeMin->SetSel(strlen(szTemp), 0);
 			}
 		}
+		else if (pWnd == (CXWnd*)TFightIA) {
+			if (strlen(szTemp)) {
+				szTemp[2] = 0;
+				FightIA = atoi(szTemp);
+				if (FightIA < 3) FightIA = 8;
+				sprintf_s(szTemp, "%i", FightIA);
+				//SetCXStr(&TFightTO->InputText, szTemp);
+				//TFightTO->SetSel(strlen(szTemp), 0);
+			}
+		}
+		else if (pWnd == (CXWnd*)TFightTO) {
+			if (strlen(szTemp)) {
+				szTemp[2] = 0;
+				FightTO = atoi(szTemp);
+				if (FightTO < 3) FightTO = 30;
+				sprintf_s(szTemp, "%i", FightTO);
+				//SetCXStr(&TFightTO->InputText, szTemp);
+				//TFightTO->SetSel(strlen(szTemp), 0);
+			}
+		}
 		else if (pWnd == (CXWnd*)TEntTO) {
 			if (strlen(szTemp)) {
 				szTemp[2] = 0;
 				EntTO = atoi(szTemp);
-				if (EntTO < 3) EntTO = 15;
+				if (EntTO < 3) EntTO = 8;
 				sprintf_s(szTemp, "%i", EntTO);
 				//SetCXStr(&TEntTO->InputText, szTemp);
 				//TEntTO->SetSel(strlen(szTemp), 0);
 			}
 		}
 	}
+
 
 	return CSidlScreenWnd::WndNotification(pWnd, Message, unknown);
 };
@@ -564,15 +516,28 @@ void DPSAdvCmd(PSPAWNINFO pChar, PCHAR szLine) {
 	GetArg(Arg1, szLine, 1);
 	if (!_stricmp(Arg1, "show"))
 		if (!DPSWnd) WriteChatf("\arDPSWnd does not exist. Try reloading your UI (/loadskin default).");
-		else DPSWnd->dShow  = DPSWnd->dShow;
+		else DPSWnd->dShow  = !DPSWnd->dShow;
+	else if (!_stricmp(Arg1, "colors"))
+		((CXWnd*)pRaidOptionsWnd)->Show(1, 1);
 	else if (DPSWnd && !_stricmp(Arg1, "reload"))
 		DPSWnd->LoadLoc();
 	else if (DPSWnd && !_stricmp(Arg1, "save"))
 		DPSWnd->SaveLoc();
-#ifdef DPSDEBUG
 	else if (!_stricmp(Arg1, "listsize"))
 		WriteChatf("\ayMobList Size: %i", DamageEntries.size());
-#endif
+	else if (!_stricmp(Arg1, "copy")) {
+		char szCopy[MAX_STRING];
+		GetArg(szCopy, szLine, 2);
+		if (DPSWnd) {
+			DPSWnd->LoadLoc(szCopy);
+			DPSWnd->SaveLoc();
+		}
+		else WriteChatf("\arFailed to Copy: DPS Window not loaded.");
+	}
+	else if (!_stricmp(Arg1, "Debug")) {
+		Debug = Debug ? false : true;
+		WriteChatf("Debug is now: %s", Debug ? "\agOn" : "\arOff");
+	}
 	CheckActive();
 }
 
@@ -582,7 +547,7 @@ void CreateDPSWindow() {
 		DPSWnd = new CDPSAdvWnd();
 		if (DPSWnd->dShow) ((CXWnd*)DPSWnd)->Show(1, 1);
 		char szTitle[MAX_STRING];
-		sprintf_s(szTitle, "DPS Window %s", DPSVERSION);
+		sprintf_s(szTitle, "DPS Window", DPSVERSION);
 		SetCCXStr(&DPSWnd->WindowText, szTitle);
 	}
 	CheckActive();
@@ -590,21 +555,20 @@ void CreateDPSWindow() {
 
 void DestroyDPSWindow() {
 	if (DPSWnd) {
-		ZoneProcess();
 		DPSWnd->SaveLoc();
 		delete DPSWnd;
 		DPSWnd = 0;
 	}
 	CheckActive();
-	bCleaned = true;
 }
 
 PLUGIN_API VOID SetDPSGameState(DWORD GameState) {
-	//DebugSpewAlways("GameState Change: %i", GameState);
+	DebugSpewAlways("GameState Change: %i", GameState);
 	if (GameState == GAMESTATE_INGAME) {
 		if (!DPSWnd) CreateDPSWindow();
 	}
 }
+bool bCleaned = false;
 PLUGIN_API VOID OnDPSCleanUI(VOID) { DestroyDPSWindow(); bCleaned = true; }
 PLUGIN_API VOID OnDPSReloadUI(VOID) { if (gGameState == GAMESTATE_INGAME && pCharSpawn) CreateDPSWindow(); }
 
@@ -617,11 +581,16 @@ PLUGIN_API VOID InitializeDPSPlugin(VOID) {
 	Zoning = false;
 	ShowMeTop = false;
 	WrongUI = false;
+	AddXMLFile("EQUI_DPSAdvWnd.xml");
+	AddCommand("/advdps", DPSAdvCmd);
 	CheckActive();
+	if (gGameState != GAMESTATE_INGAME || !pCharSpawn) return;
+	else CreateDPSWindow();
 }
 
 PLUGIN_API VOID ShutdownDPSPlugin(VOID) {
 	DestroyDPSWindow();
+	RemoveCommand("/advdps");
 #ifdef DPSDEV
 	RemoveCommand("/dpstest");
 #endif
@@ -664,25 +633,8 @@ void HandleDeath(EdgeDPSEntry DeadMob) {
 
 void IntPulse() {
 	bool CChange = false;
-
-	std::map<uint32_t, EdgeDPSEntry> DamageEntryClone(DamageEntries);
-
-	for (auto entry : DamageEntryClone) {
-		auto spawnEntry = (PSPAWNINFO)GetSpawnByID(entry.first);
-
-		auto timestamp = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> elapsed_without_record = timestamp - entry.second.LastUpdateTimestamp;
-
-		if (elapsed_without_record.count() >= (double)EntTO)
-		{
-			auto found = DamageEntries.find(entry.second.SpawnID);
-
-			if (found != DamageEntries.end())
-			{
-				DamageEntries.erase(found);
-			}
-			continue;
-		}
+	for (auto mob : DamageEntries) {
+		auto spawnEntry = (PSPAWNINFO)GetSpawnByID(mob.first);
 	}
 	if (CListType == CLISTMAXDMG && CurMaxMob && CurMaxMob != CurListMob) 
 		ListSwitch(CurMaxMob);
@@ -695,27 +647,35 @@ void IntPulse() {
 PLUGIN_API VOID OnDPSPulse(VOID) {
 	if (gGameState != GAMESTATE_INGAME || !pCharSpawn) return;
 
-	if (gGameState == GAMESTATE_INGAME && pCharSpawn) {
-		if (!DPSWnd && !Zoning)
+	if (gGameState == GAMESTATE_INGAME) {
+		if (!DPSWnd)
 			CreateDPSWindow();
 	}
 
 	if (Active) {
-		if (DPSWnd)
+
+		if (DPSWnd->dShow) ((CXWnd*)DPSWnd)->Show(1, 1);
+		if ((PSPAWNINFO)pTarget && (PSPAWNINFO)pTarget != CurTarget) TargetSwitch();
+		if (CListType == CLISTTARGET && CurTarMob && CurTarMob != CurListMob)
 		{
-			if (DPSWnd->dShow) ((CXWnd*)DPSWnd)->Show(1, 1);
-			if ((PSPAWNINFO)pTarget && (PSPAWNINFO)pTarget != CurTarget) TargetSwitch();
-			if (CListType == CLISTTARGET && CurTarMob && CurTarMob != CurListMob)
+			auto entry = GetEdgeDPSEntryByID(CurTarMob->SpawnID, false);
+			if (entry.SpawnID && entry.weDamaged)
 			{
-				auto entry = GetEdgeDPSEntryByID(CurTarMob->SpawnID, false);
-				if (entry.SpawnID && entry.weDamaged)
-				{
-					ListSwitch(CurTarMob);
-				}
+				ListSwitch(CurTarMob);
 			}
-			if (CheckInterval()) IntPulse();
 		}
+		if (CheckInterval()) IntPulse();
 	}
+}
+
+void ZoneProcess() {
+	LastMob = 0;
+	CurTarget = 0;
+	CurTarMob = 0;
+	CurListMob = 0;
+	CurMaxMob = 0;
+	DPSMob *pMob = 0;
+	DPSMob::DPSEntry *pEnt = 0;
 }
 
 PLUGIN_API VOID OnDPSBeginZone(VOID) {

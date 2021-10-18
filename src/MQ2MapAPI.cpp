@@ -92,13 +92,13 @@ DWORD GetTrackingAmount()
 	DWORD trackingDist = 10;
 	if (((PCHARINFO)pCharData) && ((PCHARINFO)pCharData)->pCI2)
 	{
-		if (PCHARINFO2 pCharInfo = GetCharInfo2())
+		for (unsigned long nGem = 0; nGem < NUM_SPELL_GEMS; nGem++)
 		{
-			for (unsigned long nBookSlot = 0; nBookSlot < NUM_BOOK_SLOTS; nBookSlot++)
+			if (PCHARINFO2 pCharInfo = GetCharInfo2())
 			{
-				if (pCharInfo->SpellBook[nBookSlot] != 0xFFFFFFFF)
+				if (pCharInfo->MemorizedSpells[nGem] != 0xFFFFFFFF)
 				{
-					switch (pCharInfo->SpellBook[nBookSlot])
+					switch (pCharInfo->MemorizedSpells[nGem])
 					{
 					case 7864:
 						trackingDist += 50;

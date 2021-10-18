@@ -59,6 +59,7 @@ BOOL AddDetour(DWORD address, PBYTE pfDetour, PBYTE pfTrampoline, DWORD Count)
     DebugSpew("AddDetour(0x%X,0x%X,0x%X,0x%X)",address,pfDetour,pfTrampoline,Count);
     if (FindDetour(address))
     {
+
         DebugSpew("Address 0x%x already detoured.",address);
         return FALSE;
     }
@@ -178,20 +179,18 @@ public:
 
 int CObfuscator::doit_detour(int opcode, int flag)
 {
+#if 0
+    if (EQ_BEGIN_ZONE == opcode) {
+        DebugSpewAlways("EQ_BEGIN_ZONE");
+    } else {
+        DebugSpewAlways("opcode %d", opcode);
+    }
+#endif
 	if (opcode == EQ_BEGIN_ZONE)
 	{
-#ifdef DPSPLUGIN
-		OnDPSBeginZone();
-#endif
-		OnFloatingTextManagerBeginZone();
 	}
 	if (opcode == EQ_END_ZONE)
 	{
-		OnLabelReceivePPPacket();
-		OnFloatingTextManagerEndZone();
-#ifdef DPSPLUGIN
-		OnDPSEndZone();
-#endif
 	}
     return doit_tramp(opcode, flag);
 };

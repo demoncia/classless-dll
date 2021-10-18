@@ -130,6 +130,7 @@ void InitializeMQ2Data()
     AddMQ2Data("Math",dataMath);
     AddMQ2Data("Zone",dataZone);
     AddMQ2Data("Group",dataGroup);
+    AddMQ2Data("String",dataString);
     AddMQ2Data("Int",dataInt);
     AddMQ2Data("Bool",dataBool);
     AddMQ2Data("Float",dataFloat);

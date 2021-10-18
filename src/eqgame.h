@@ -86,7 +86,6 @@
 #define __ShiftKeyDown_x                                           0xDDFD00
 #define __ShowNames_x                                              0xDE0A70
 #define __Socials_x                                                0xE15F10
-#define __CurrentlyInteracting_x								   0xE635B0
 
 
 //// 
@@ -294,7 +293,6 @@
 
 // CBankWnd 
 #define CBankWnd__GetNumBankSlots_x                                0x627C50
-#define CBankWnd__Activate_x									   0x6273E0
 
 // CBazaarSearchWnd 
 #define CBazaarSearchWnd__HandleBazaarMsg_x                        0x635530
@@ -457,7 +455,6 @@
 #define CMerchantWnd__RequestBuyItem_x                             0x6F5BE0
 #define CMerchantWnd__RequestSellItem_x                            0x71CCA0
 #define CMerchantWnd__SelectBuySellSlot_x                          0x6EFA00
-#define CMerchantWnd__Activate_x									   0x6EE860
 
 // CObfuscator
 #define CObfuscator__doit_x                                        0x7D03C0
@@ -497,7 +494,7 @@
 
 // CSpellBookWnd 
 #define CSpellBookWnd__MemorizeSet_x                               0x75CAC0
-#define CSpellBookWnd__CanStartMemming_x                           0x75BD40
+
 // CStmlWnd
 #define CStmlWnd__AppendSTML_x                                     0x886720
 #define CStmlWnd__CalculateHSBRange_x                              0x87EE80
@@ -599,8 +596,6 @@
 #define EQ_Character__CastRay_x                                    0x8D0520
 #define EQ_Character__CastSpell_x                                  0x43A830
 #define EQ_Character__Cur_HP_x                                     0x449E00
-#define EQ_Character__Cur_Mana_x                                   0x4442E0
-#define EQ_Character__Cur_Endurance_x                                  0x444170
 #define EQ_Character__GetAACastingTimeModifier_x                   0x4336D0
 #define EQ_Character__GetCharInfo2_x                               0x7DB210
 #define EQ_Character__GetFocusCastingTimeModifier_x                0x42C9A0
@@ -613,11 +608,7 @@
 #define EQ_Character__GetConLevel_x                                0x577CB0
 #define EQ_Character__IsExpansionFlag_x                            0x4106C0
 #define EQ_Character__TotalEffect_x                                0x438990
-#define EQ_Character__CalculateWeight_x								0x44CDD0
-#define EQ_Character__GetUsableClasses_x							0x7B4CE0
-#define EQ_Character__IsSpellcaster_x								0x443F50
-#define EQ_Character__IsSpellcaster_2_x								0x4288E0
-#define EQ_Character__IsSpellcaster_3_x								0x59FB90
+
 // EQ_Item 
 #define EQ_Item__CanDrop_x                                         0x554E50
 #define EQ_Item__CreateItemTagString_x                             0x7BBC50
@@ -677,9 +668,3 @@
 
 // PcZoneClient
 #define PcZoneClient__GetPcSkillLimit_x                            0x584BE0
-
-// EQ_Spell:
-#define EQ_Spell__GetSpellLevelNeeded_x								0x4AF700
-
-// PlayerPhysics:
-#define PlayerPhysics__ClampVelocity_x								0x439570

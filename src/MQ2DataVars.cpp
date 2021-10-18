@@ -483,104 +483,6 @@ VOID NewVardata(PSPAWNINFO pChar, PCHAR szLine)
     }
 }
 
-VOID AddEvent(DWORD Event, PCHAR FirstArg, ...)
-{ 
-    PEVENTQUEUE pEvent = NULL; 
-    if (!gEventFunc[Event]) 
-        return; 
-    pEvent = (PEVENTQUEUE)malloc(sizeof(EVENTQUEUE)); 
-    if (!pEvent) 
-        return;
-
-    ZeroMemory(pEvent,sizeof(EVENTQUEUE)); 
-    pEvent->Type = Event; 
-    pEvent->pEventList = NULL; 
-    if (FirstArg) {
-        va_list marker;
-        DWORD i=0;
-        PCHAR CurrentArg = FirstArg;
-        va_start(marker, FirstArg);
-
-        while (CurrentArg) 
-        {
-            CHAR szParamName[MAX_STRING] = {0};
-            CHAR szParamType[MAX_STRING] = {0};
-            GetFuncParam(gEventFunc[Event]->Line,i,szParamName,szParamType);
-            MQ2Type *pType = FindMQ2DataType(szParamType);
-            if (!pType)
-                pType=pStringType;
-            AddMQ2DataEventVariable(szParamName,"",pType,&pEvent->Parameters,CurrentArg);
-            i++;
-            CurrentArg = va_arg(marker,PCHAR);
-        }
-        va_end(marker);
-    }
-
-    if (!gEventQueue) 
-    { 
-        gEventQueue = pEvent; 
-    } 
-    else 
-    { 
-        PEVENTQUEUE pTemp = NULL; 
-        for (pTemp = gEventQueue;pTemp->pNext;pTemp=pTemp->pNext); 
-        pTemp->pNext = pEvent; 
-        pEvent->pPrev=pTemp;
-    } 
-} 
-
-#ifdef USEBLECHEVENTS
-void __stdcall EventBlechCallback(unsigned int ID, void * pData, PBLECHVALUE pValues)
-{
-    DebugSpew("EventBlechCallback(%d,%X,%X) msg='%s'",ID,pData,pValues,EventMsg);
-    PEVENTLIST pEList=(PEVENTLIST)pData;
-    PEVENTQUEUE pEvent = NULL;
-    if (!pEList->pEventFunc) 
-    {
-        DebugSpew("EventBlechCallback() -- pEventFunc is NULL, cannot call event sub");
-        return;
-    }
-    pEvent = (PEVENTQUEUE)malloc(sizeof(EVENTQUEUE));
-    if (!pEvent) 
-        return;
-    ZeroMemory(pEvent,sizeof(EVENTQUEUE));
-    pEvent->Type = EVENT_CUSTOM;
-    pEvent->pEventList = pEList;
-    CHAR szParamName[MAX_STRING] = {0};
-    CHAR szParamType[MAX_STRING] = {0};
-    GetFuncParam(pEList->pEventFunc->Line,0,szParamName,szParamType);
-    MQ2Type *pType = FindMQ2DataType(szParamType);
-    if (!pType)
-        pType=pStringType;
-
-    AddMQ2DataEventVariable(szParamName,"",pType,&pEvent->Parameters,EventMsg);
-    DWORD nParam=1;
-    while(pValues)
-    {
-        if (pValues->Name[0]!='*')
-        {
-            GetFuncParam(pEList->pEventFunc->Line,atoi(pValues->Name),szParamName,szParamType);
-            MQ2Type *pType = FindMQ2DataType(szParamType);
-            if (!pType)
-                pType=pStringType;
-            AddMQ2DataEventVariable(szParamName,"",pType,&pEvent->Parameters,pValues->Value);    
-        }
-        pValues=pValues->pNext;
-    }
-
-    if (!gEventQueue) 
-    {
-        gEventQueue = pEvent;
-    } 
-    else 
-    {
-        PEVENTQUEUE pTemp;
-        for (pTemp = gEventQueue;pTemp->pNext;pTemp=pTemp->pNext);
-        pTemp->pNext = pEvent;
-        pEvent->pPrev=pTemp;
-    }
-
-}
 #else
 VOID AddCustomEvent(PEVENTLIST pEList, PCHAR szLine)
 {
@@ -632,11 +534,8 @@ VOID DropTimers(VOID)
             if (!pTimer->Current)
             {
                 itoa(pTimer->Original,szOrig,10);
-                AddEvent(EVENT_TIMER,pTimer->szName,szOrig,NULL);
             }
         }
         pTimer=pTimer->pNext;
     }
 }
-
-#endif

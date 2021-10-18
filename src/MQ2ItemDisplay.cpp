@@ -23,64 +23,6 @@ extern "C" {
     CONTENTS g_Contents;
 }
 
-bool ItemIsVisibleSlot(DWORD Slots)
-{
-	auto Count = 0;
-	auto cmp = Slots;
-
-	if (cmp & (1 << 2) || cmp & (1 << 7) || cmp & (1 << 9) || cmp & (1 << 10) || cmp & (1 << 12) || cmp & (1 << 17) || cmp & (1 << 18) || cmp & (1 << 19))
-		return true;
-
-	return false;
-}
-
-MaterialType GetMitigationTextureType(MaterialType material)
-{
-
-	switch (material)
-	{
-	case MaterialType::materialCloth:
-	case MaterialType::materialClothVelious:
-	case MaterialType::materialClothRobe1:
-	case MaterialType::materialClothRobe2:
-	case MaterialType::materialClothRobe3:
-	case MaterialType::materialClothRobe4:
-	case MaterialType::materialClothRobe5:
-	case MaterialType::materialClothRobe6:
-	case MaterialType::materialClothRobe7:
-	case MaterialType::materialLeatherMonk:
-	{
-		return MaterialType::materialCloth;
-	}
-	case MaterialType::materialLeather:
-	case MaterialType::materialLeatherChitin:
-	case MaterialType::materialLeatherVelious1:
-	case MaterialType::materialLeatherVelious2:
-	{
-		return MaterialType::materialLeather;
-	}
-
-	case MaterialType::materialChain:
-	case MaterialType::materialChainScale:
-	case MaterialType::materialChainVelious1:
-	case MaterialType::materialChainVelious2:
-	{
-		return MaterialType::materialChain;
-	}
-
-	case MaterialType::materialPlate:
-	case MaterialType::materialPlateVelious1:
-	case MaterialType::materialPlateVelious2:
-	{
-		return MaterialType::materialPlate;
-	}
-
-	}
-
-	return MaterialType::materialInvalidType;
-
-}
-
 // *************************************************************************** 
 // Function:    ItemDisplayHook
 // Description: Our Item display hook 
@@ -518,28 +460,7 @@ public:
         // keep a global copy of the last item displayed...
         memcpy(&g_Item, Item, sizeof(ITEMINFO));
 
-		if (ItemIsVisibleSlot(Item->EquipSlots))
-		{
-			switch (GetMitigationTextureType((MaterialType)Item->Material))
-			{
-			case MaterialType::materialCloth:
-				sprintf(temp, "Material: Cloth<br>");
-				break;
-			case MaterialType::materialLeather:
-				sprintf(temp, "Material: Leather<br>");
-				break;
-			case MaterialType::materialChain:
-				sprintf(temp, "Material: Chain<br>");
-				break;
-			case MaterialType::materialPlate:
-				sprintf(temp, "Material: Plate<br>");
-				break;
-			default:
-				break;
-			}
-		}
-		std::string tmp = string("<BR><c \"#00FFFF\">") + string(temp);
-        strcpy(out,tmp.c_str());
+        strcpy(out,"<BR><c \"#00FFFF\">");
         if ( Item->ItemNumber > 0 && pLocalPlayer && pLocalPlayer->Data.GM) { 
             sprintf(temp,"Item ID: %d<br>", Item->ItemNumber); 
             strcat(out, temp); 
@@ -592,15 +513,14 @@ public:
         }
 
         //Outlaw (AKA CheckinThingsOut) (02/24/2005)
-		if (Item->ItemType != 27) { //Arrows..they have dmg/dly but we don't want them
-			if (Item->Delay > 0) {
-				if (Item->Damage > 0) {
-					sprintf(temp, "Base DPS: %5.3f<br>", ((float)Item->Damage / (float)Item->Delay) * 10);
-					strcat(out, temp);
-				}
-			}
-		}
-
+        if (Item->ItemType != 27) { //Arrows..they have dmg/dly but we don't want them
+            if ( Item->Delay > 0) {
+                if ( Item->Damage > 0) {
+                    sprintf(temp,"Base DPS: %5.3f<br>", ((float)Item->Damage / (float)Item->Delay) * 10);
+                    strcat(out, temp);
+                }
+            }
+        }
         lore=Item->LoreName;
         if (lore[0]=='*') lore++;
         if (strcmp(lore,Item->Name)) {

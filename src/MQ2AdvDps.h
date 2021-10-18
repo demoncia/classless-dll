@@ -1,3 +1,0 @@
-// DPS ADV CREATED BY WARNEN 2008-2009
-// MQ2DPSAdv.h
-#pragma once
