@@ -18,6 +18,7 @@
 #include <iphlpapi.h>
 #include <IPTypes.h>
 #include "spaghetti.h"
+#include "demoncia.h"
 
 #pragma comment(lib, "Iphlpapi.lib")
 
@@ -730,40 +731,6 @@ unsigned char __fastcall SendMessage_Detour(DWORD *con, unsigned __int32 unk, un
 	return retval;
 }
 
-
-char* __fastcall HandleAddZone_Trampoline(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z);
-char* __fastcall HandleAddZone_Detour(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z)
-{
-	if (!strcmp(zoneShortName, "interiorwalltest")) {
-		DebugSpew("injecting zone hollows id 787");
-		HandleAddZone_Trampoline(pThis, pPtr, 0, 787, "hollows", "Darkened Hollows", 35154, 4, 0, 0, 0);
-		DebugSpew("injecting zone delves id 788");
-		HandleAddZone_Trampoline(pThis, pPtr, 0, 788, "delves", "Demonic Delves", 35155, 4, 0, 0, 0);
-	} 
-	DebugSpew("loaded zone %s id %d", zoneShortName, zoneID);
-	return HandleAddZone_Trampoline(pThis, pPtr, zoneType, zoneID, zoneShortName, zoneLongName, eqStrID, zoneFlags2, x, y, z);
-}
-
-DETOUR_TRAMPOLINE_EMPTY(char* __fastcall HandleAddZone_Trampoline(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z));
-
-unsigned int __cdecl HandleGetINIFile_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName);
-unsigned int __cdecl HandleGetINIFile_Detour(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName)
-{
-	// lpAppName should be "Defaults"
-	if (strcmp(lpAppName, "Defaults")) return HandleGetINIFile_Trampoline(lpAppName, lpKeyName, lpDefault, lpReturnedString, nSize, lpFileName);
-
-	// compare Name and find luclin in it
-	if (strstr(lpKeyName, "UseLuclin")) {
-		strncpy(lpReturnedString, "FALSE", 5);
-		return strlen(lpReturnedString);
-	}
-	
-	return HandleGetINIFile_Trampoline(lpAppName, lpKeyName, lpDefault, lpReturnedString, nSize, lpFileName);
-}
-
-DETOUR_TRAMPOLINE_EMPTY(unsigned int __cdecl HandleGetINIFile_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName));
-
-
 DETOUR_TRAMPOLINE_EMPTY(unsigned char __fastcall SendMessage_Trampoline(DWORD *, unsigned __int32, unsigned __int32, char* buf, size_t, DWORD, DWORD));
 DETOUR_TRAMPOLINE_EMPTY(unsigned char __fastcall SetDeviceGammaRamp_Trampoline(HDC hdc, LPVOID lpRamp));
 
@@ -928,224 +895,120 @@ void InitHooks()
    InitializeMQ2ItemDisplay();
    InitializeMQ2Labels();
 
-	//heqwMod
-	//wpsaddress = (DWORD)GetProcAddress(hkernel32Mod, "WritePrivateProfileStringA");
-	//HMODULE huser32Mod = GetModuleHandleA("user32.dll");
-	//
-	//swAddress = (DWORD)GetProcAddress(huser32Mod, "ShowWindow");
-	//cwAddress = (DWORD)GetProcAddress(huser32Mod, "CreateWindowExA");
-	//swlAddress = (DWORD)GetProcAddress(huser32Mod, "SetWindowLong");
-	//EzDetour(0x004F2ED0, SendExeChecksum_Detour, SendExeChecksum_Trampoline);
-	//EzDetour(0x004AA8BC, &Eqmachooks::CDisplay__Render_World_Detour, &Eqmachooks::CDisplay__Render_World_Trampoline);
-	//EzDetour(cwAddress, CreateWindowExA_Detour, CreateWindowExA_Trampoline);
-	//here to fix the no items on corpse bug - eqmule
-	//wpsaddress = (DWORD)GetProcAddress(hkernel32Mod, "WritePrivateProfileStringA");
-	//HMODULE huser32Mod = GetModuleHandleA("user32.dll");
-	//
-	//swAddress = (DWORD)GetProcAddress(huser32Mod, "ShowWindow");
-	//cwAddress = (DWORD)GetProcAddress(huser32Mod, "CreateWindowExA");
-	//swlAddress = (DWORD)GetProcAddress(huser32Mod, "SetWindowLong");
-	//EzDetour(0x004F2ED0, SendExeChecksum_Detour, SendExeChecksum_Trampoline);
-	//EzDetour(0x004AA8BC, &Eqmachooks::CDisplay__Render_World_Detour, &Eqmachooks::CDisplay__Render_World_Trampoline);
-	//EzDetour(cwAddress, CreateWindowExA_Detour, CreateWindowExA_Trampoline);
-	//here to fix the no items on corpse bug - eqmule
-	//EzDetour(0x00537E4B, &Eqmachooks::CEverQuest__StripName_Detour, &Eqmachooks::CEverQuest__StripName_Trampoline);
-	//EzDetour(0x00537D39, &Eqmachooks::CEverQuest__TrimName_Detour, &Eqmachooks::CEverQuest__TrimName_Trampoline);
+	if (!baseAddress) return;
 
-   if (baseAddress) {
+	DisableLuclinModels();
+	DisableMap();
+	InjectCustomZones();
 
-	   DWORD var = (((DWORD)0x008C4CE0 - 0x400000) + baseAddress);
-	   EzDetour((DWORD)var, SendMessage_Detour, SendMessage_Trampoline);
+	DWORD var = (((DWORD)0x008C4CE0 - 0x400000) + baseAddress);
+	EzDetour((DWORD)var, SendMessage_Detour, SendMessage_Trampoline);
 
-	   var = (((DWORD)0x004C3250 - 0x400000) + baseAddress);
-	   EzDetour((DWORD)var, HandleWorldMessage_Detour, HandleWorldMessage_Trampoline);
+	var = (((DWORD)0x004C3250 - 0x400000) + baseAddress);
+	EzDetour((DWORD)var, HandleWorldMessage_Detour, HandleWorldMessage_Trampoline);
 	   
-	   var = (((DWORD)0x00860EF0 - 0x400000) + baseAddress);
-	   EzDetour((DWORD)var, HandleGetINIFile_Detour, HandleGetINIFile_Trampoline);
+	//basedata as spell CRC begin
+	var = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "spells_us.txt", 13);
 
-	   var = (((DWORD)0x007DC430 - 0x400000) + baseAddress);
-	   EzDetour((DWORD)var, HandleAddZone_Detour, HandleAddZone_Trampoline);
+	DWORD varToPatch = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
+	var = (((DWORD)0x004EEAAB - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, (void*)&varToPatch, 4);
+	//basedata as spell CRC end
 
+	var = (((DWORD)0x0044410C - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic Stamina
 
-	   //basedata as spell CRC begin
-	   var = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "spells_us.txt", 13);
+	var = (((DWORD)0x00442B36 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic int
+	var = (((DWORD)0x00442BB6 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic wis
 
-	   DWORD varToPatch = (((DWORD)0x00AA6980 - 0x400000) + baseAddress);
-	   var = (((DWORD)0x004EEAAB - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, (void*)&varToPatch, 4);
-	   //basedata as spell CRC end
+	//#pragma comment(lib, "Iphlpapi.lib")
 
+	var = (((DWORD)0x004538AE - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\x90\x90\xEB",
+		3); // Fix Max HP setting
+	//0065CC71
+	//var = (((DWORD)0x0065CC09 - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x90\x90\x90\x90",
+		// 4); // Fix tradeskill containers
 
-	   var = (((DWORD)0x0044410C - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic Stamina
+	//DWORD varArray = (((DWORD)0x009BFF6D - 0x400000) + baseAddress);
 
-	   var = (((DWORD)0x00442B36 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic int
-	   var = (((DWORD)0x00442BB6 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Remove heroic wis
+	//var = (((DWORD)0x004ED03B - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x4C", 1); // Link stuff
+	//var = (((DWORD)0x004ED051 - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+	//var = (((DWORD)0x004ED072 - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+	//var = (((DWORD)0x007BBC9A - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+	//var = (((DWORD)0x007BBD77 - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
 
-	   //#pragma comment(lib, "Iphlpapi.lib")
+	//var = (((DWORD)0x009BFF6D - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x25\x30\x38\x58", 4); // Link stuff
 
-	   var = (((DWORD)0x004538AE - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x90\x90\xEB",
-		   3); // Fix Max HP setting
-	   //0065CC71
-	   //var = (((DWORD)0x0065CC09 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x90\x90\x90\x90",
-		  // 4); // Fix tradeskill containers
+	//var = (((DWORD)0x00A1ACE0 - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x4F", 1); // Link stuff
 
-	   //DWORD varArray = (((DWORD)0x009BFF6D - 0x400000) + baseAddress);
+	var = (((DWORD)0x004ED062 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\x08", 1); // Fix current HP cap
 
-	   //var = (((DWORD)0x004ED03B - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x4C", 1); // Link stuff
-	   //var = (((DWORD)0x004ED051 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
-	   //var = (((DWORD)0x004ED072 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
-	   //var = (((DWORD)0x007BBC9A - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
-	   //var = (((DWORD)0x007BBD77 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, (DWORD*)&varArray, 4); // Link stuff
+	var = (((DWORD)0x004ED083 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\x08", 1); // Fix current HP cap
 
-	   //var = (((DWORD)0x009BFF6D - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x25\x30\x38\x58", 4); // Link stuff
+	//var = (((DWORD)0x0063C36F - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x90\x90\x90\x90", 4); // Bazaar trader anywhere
 
-	   //var = (((DWORD)0x00A1ACE0 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x4F", 1); // Link stuff
+	//var = (((DWORD)0x0063978E - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Bazaar trader anywhere
 
-	   var = (((DWORD)0x004ED062 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x08", 1); // Fix current HP cap
+	//var = (((DWORD)0x006AB6AF - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x90\x90\xE9\xA5\x00", 5); // nop / jmp dmg bonus
 
-	   var = (((DWORD)0x004ED083 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x08", 1); // Fix current HP cap
+	//var = (((DWORD)0x006AB6B6 - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x90", 1); // nop / jmp dmg bonus
 
-	   //var = (((DWORD)0x0063C36F - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x90\x90\x90\x90", 4); // Bazaar trader anywhere
-
-	   //var = (((DWORD)0x0063978E - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x90\x90\xEB", 3); // Bazaar trader anywhere
-
-	   //var = (((DWORD)0x006AB6AF - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x90\x90\xE9\xA5\x00", 5); // nop / jmp dmg bonus
-
-	   //var = (((DWORD)0x006AB6B6 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x90", 1); // nop / jmp dmg bonus
-
-	   //var = (((DWORD)0x00632DE6 - 0x400000) + baseAddress);
-	   //PatchA((DWORD*)var, "\x90\x90", 2); // nop trader check
-		var = ((0x00507b30 - 0x400000) + baseAddress);
-	   	return_SetCCreateCameraDet = (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
+	//var = (((DWORD)0x00632DE6 - 0x400000) + baseAddress);
+	//PatchA((DWORD*)var, "\x90\x90", 2); // nop trader check
+	var = ((0x00507b30 - 0x400000) + baseAddress);
+	return_SetCCreateCameraDet = (SetCCreateCamera_t)DetourFunction((PBYTE)var, (PBYTE)SetCCreateCameraHook);
 	   
-	   var = (((DWORD)0x005FE751 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\xEB\x1C\x90\x90\x90", 5); // patchme req bypass
+	var = (((DWORD)0x005FE751 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\xEB\x1C\x90\x90\x90", 5); // patchme req bypass
 
 
-	   var = (((DWORD)0x0045AE9F - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, "\x90\x90\xE9\x76\x03\x00\x00\x90",
-		   8); // Fix food/drink spam
-		auto charToBreak = rand();
+	var = (((DWORD)0x0045AE9F - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, "\x90\x90\xE9\x76\x03\x00\x00\x90",
+		8); // Fix food/drink spam
+	auto charToBreak = rand();
 
-	   var = (((DWORD)0x009DD250 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+	var = (((DWORD)0x009DD250 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
 
-	   charToBreak = rand();
-	   var = (((DWORD)0x009DD254 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+	charToBreak = rand();
+	var = (((DWORD)0x009DD254 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
 
-	   charToBreak = rand();
-	   var = (((DWORD)0x009DD258 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+	charToBreak = rand();
+	var = (((DWORD)0x009DD258 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
 
-	   charToBreak = rand();
-	   var = (((DWORD)0x009DD25C - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+	charToBreak = rand();
+	var = (((DWORD)0x009DD25C - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
 
-	   charToBreak = rand();
-	   var = (((DWORD)0x009DD260 - 0x400000) + baseAddress);
-	   PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
-	   HMODULE hkernel32Mod = GetModuleHandle("kernel32.dll");
-	   DWORD gmfadress = (DWORD)GetProcAddress(hkernel32Mod, "GetModuleFileNameA");
-	   EzDetour(gmfadress, GetModuleFileNameA_detour, GetModuleFileNameA_tramp);
-	   HMODULE gdi32mod = GetModuleHandle("gdi32.dll");
-	   DWORD jmpToDeviceGamma = (DWORD)GetProcAddress(gdi32mod, "SetDeviceGammaRamp");
-	   EzDetour(jmpToDeviceGamma, SetDeviceGammaRamp_Hook, SetDeviceGammaRamp_Trampoline);
-
-   }
-	//EzDetour(0x00537E4B, &Eqmachooks::CEverQuest__StripName_Detour, &Eqmachooks::CEverQuest__StripName_Trampoline);
-	//EzDetour(0x00537D39, &Eqmachooks::CEverQuest__TrimName_Detour, &Eqmachooks::CEverQuest__TrimName_Trampoline);
-
-	//return_CreateFileA = (CreateFileA_t)DetourFunction((PBYTE)GetProcAddress(hkernel32Mod, "CreateFileA"),(PBYTE)CreateFileAHook);
-	//EzDetour(wpsaddress, WritePrivateProfileStringA_detour, WritePrivateProfileStringA_tramp);
-	//EQMACMQ_REAL_CBuffWindow__RefreshBuffDisplay = (EQ_FUNCTION_TYPE_CBuffWindow__RefreshBuffDisplay)DetourFunction((PBYTE)EQ_FUNCTION_CBuffWindow__RefreshBuffDisplay, (PBYTE)EQMACMQ_DETOUR_CBuffWindow__RefreshBuffDisplay);
-	//heqwMod = GetModuleHandle("eqw.dll");
-
-	//return_ProcessGameEvents = (ProcessGameEvents_t)DetourFunction((PBYTE)__ProcessGameEvents, (PBYTE)return_ProcessGameEvents);
-	//return_SetMouseCenter = (ProcessGameEvents_t)DetourFunction((PBYTE)o_MouseCenter, (PBYTE)SetMouseCenter_Hook);
-
-	//eqgfxMod = *(DWORD*)(0x007F9C50);
-	//d3ddev = (DWORD)(eqgfxMod + 0x00A4F92C);
-	//	
-	//EzDetour(0x0055A4F4, WndProc_Detour, WndProc_Trampoline);
-	//// This detours key press down handler, so we can capture alt-enter to switch video modes
-	//EzDetour(0x00525B04, ProcessKeyDown_Detour, ProcessKeyDown_Trampoline);
-	//	
-	//EzDetour(0x00538CE6, CEverQuest__DisplayScreen_Detour, CEverQuest__DisplayScreen_Trampoline);
-
-	//// Add MGB for Beastlords
-	//EzDetour(0x004B8231, sub_4B8231_Detour, sub_4B8231_Trampoline);
-
-	////this one is here for eqplaynice - eqmule
-
-	//EzDetour(0x0055AFE2, &Eqmachooks::CDisplay__Process_Events_Detour, &Eqmachooks::CDisplay__Process_Events_Trampoline);
-
-	//EzDetour(EQ_FUNCTION_HandleMouseWheel, HandleMouseWheel_Detour, HandleMouseWheel_Trampoline);
-
-	//EQMACMQ_REAL_CCharacterSelectWnd__Quit = (EQ_FUNCTION_TYPE_CCharacterSelectWnd__Quit)DetourFunction((PBYTE)EQ_FUNCTION_CCharacterSelectWnd__Quit, (PBYTE)EQMACMQ_DETOUR_CCharacterSelectWnd__Quit);
-
-
-
-	//char szResult[255];
-	//char szDefault[255];
-	//sprintf(szDefault, "%s", "TRUE");
-	//DWORD error = GetPrivateProfileStringA("Options", "WindowedMode", szDefault, szResult, 255, "./eqclient.ini");
-	//if (GetLastError())
-	//{
-	//	WritePrivateProfileStringA("Options", "WindowedMode", szDefault, "./eqclient.ini");
-	//}
-	//if (!strcmp(szResult, "FALSE")) {
-	//	bWindowedMode = false;
-	//	start_fullscreen = true;
-	//}
-	//
-	//sprintf(szDefault, "%d", 32);
-	//error = GetPrivateProfileStringA("VideoMode", "BitsPerPixel", szDefault, szResult, 255, "./eqclient.ini");
-	//if (!GetLastError())
-	//{
-	//	// if set to 16 bit, change to 32
-	//	if (!strcmp(szResult, "16"))
-	//		WritePrivateProfileStringA_tramp("VideoMode", "BitsPerPixel", szDefault, "./eqclient.ini");
-	//}
-	//else {
-	//	// we do not have one set
-	//	DEVMODE dm;
-	//	// initialize the DEVMODE structure
-	//	ZeroMemory(&dm, sizeof(dm));
-	//	dm.dmSize = sizeof(dm);
-	//	DWORD bits = 32;
-	//	DWORD freq = 40;
-	//	if (0 != EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm))
-	//	{
-	//		// get default display settings
-	//		bits = dm.dmBitsPerPel;
-	//		freq = dm.dmDisplayFrequency;
-	//	}
-	//	sprintf(szDefault, "%d", freq);
-	//	WritePrivateProfileStringA_tramp("VideoMode", "RefreshRate", szDefault, "./eqclient.ini");
-	//	sprintf(szDefault, "%d", bits);
-	//	WritePrivateProfileStringA_tramp("VideoMode", "BitsPerPixel", szDefault, "./eqclient.ini");
-	//}
-	//bInitalized=true;
+	charToBreak = rand();
+	var = (((DWORD)0x009DD260 - 0x400000) + baseAddress);
+	PatchA((DWORD*)var, (DWORD*)&charToBreak, 4);
+	HMODULE hkernel32Mod = GetModuleHandle("kernel32.dll");
+	DWORD gmfadress = (DWORD)GetProcAddress(hkernel32Mod, "GetModuleFileNameA");
+	EzDetour(gmfadress, GetModuleFileNameA_detour, GetModuleFileNameA_tramp);
+	HMODULE gdi32mod = GetModuleHandle("gdi32.dll");
+	DWORD jmpToDeviceGamma = (DWORD)GetProcAddress(gdi32mod, "SetDeviceGammaRamp");
+	EzDetour(jmpToDeviceGamma, SetDeviceGammaRamp_Hook, SetDeviceGammaRamp_Trampoline);
 }
 
 void ExitHooks()
