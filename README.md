@@ -2,6 +2,63 @@
 
 This is the dinput.dll included in client. Visit https://github.com/demoncia/client for the deployed code
 
+
+## TODO
+- [ ] DisableCAAwnd
+- [ ] DisableAchievement (not needed, it can't be sent without a proper packet reply from server anyways)
+- [ ] DisableAdventure
+- [ ] DisableAggroMeter
+- [ ] DisableCAlarmWnd
+- [ ] DisableAlerts
+- [ ] DisableAudioTriggers
+- [ ] DisableCAuraWnd
+- [ ] DisableCBandolierWnd
+- [ ] DisableCBlockedBuffWnd
+- [ ] DisableCBodyTintWnd
+- [x] DisableCBazaarSearchWnd
+- [ ] DisableCBazaarWnd
+- [ ] DisableCBarterMerchantWnd
+- [ ] DisableCBarterSearchWnd
+- [ ] DisableCGroupMentorWnd
+- [ ] DisableCGuildBankWnd
+- [ ] DisableCGuildMgmtWnd
+- [ ] DisableCTributeMasterWnd
+- [ ] DisableCBarterWnd
+- [ ] DisableCDynamicZoneWnd
+- [ ] DisableClaimWindow
+- [ ] DisableCCombatAbilityWnd
+- [ ] DisableCTaskWnd
+- [ ] DisableCTributeBenefitWnd
+- [ ] DisableCTributeMasterWnd
+- [ ] DisableExpeditions
+- [ ] DisableExtendedTarget (/)
+- [ ] DisableFellowship
+- [ ] DisableCFindLocationWnd
+- [ ] DisableLeadership
+- [ ] DisableLeaveRealEstate (no ui, 0x1da9 4 bytes)
+- [ ] DisableLookingForGroup
+- [ ] DisableLookingForGuild
+- [ ] DisableMail
+- [ ] DisableMarketplace
+- [ ] DisableMarketplace
+- [ ] DisableMusicPlayer (/mp3)
+- [ ] DisableNPCJournal
+- [ ] DisablePolls
+- [ ] DisableQuestJournal
+- [ ] DisableRaid
+- [ ] DisableRealEstateItems (0x2fa0 336 bytes
+- [ ] DisableRealEstateTrophies
+- [ ] DisableReward
+- [ ] DisableSocialSharing
+- [ ] DisableCStoryWnd
+- [ ] DisableTGCStartupWnd (LegendofNorrath)
+- [ ] DisableUpdateEQPlayers (no UI, sends 0x6f8d 4 bytes)
+- [ ] DisableCVoiceMacroWnd
+- [ ] DisableZoneGuide
+- [ ] Hijack PlayerProfilePage link: http://eqplayers.station.sony.com/character_profile.vm?characterId=0
+- [x] DisableCMapViewWnd
+
+
 ## Disable ASLR for eqgame.exe
 
 

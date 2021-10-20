@@ -2,14 +2,11 @@
 
 #include "MQ2Main.h"
 
-char __fastcall DisableMap_Trampoline(char* pThis);
-char __fastcall DisableMap_Detour(char* pThis) { return 0;  }
-
-DETOUR_TRAMPOLINE_EMPTY(char __fastcall DisableMap_Trampoline(char* pThis));
-
+char __fastcall DisableCMapViewWnd_Trampoline(char* pThis);
+char __fastcall DisableCMapViewWnd_Detour(char* pThis) { return 0;  }
+DETOUR_TRAMPOLINE_EMPTY(char __fastcall DisableCMapViewWnd_Trampoline(char* pThis));
 // Hooks to CMapViewWnd::AboutToShow
-void DisableMap() { EzDetour((((DWORD)0x006CF4A0 - 0x400000) + baseAddress), DisableMap_Detour, DisableMap_Trampoline); };
-
+void DisableCMapViewWnd() { EzDetour((((DWORD)0x006CF4A0 - 0x400000) + baseAddress), DisableCMapViewWnd_Detour, DisableCMapViewWnd_Trampoline); };
 
 char* __fastcall InjectCustomZones_Trampoline(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z);
 char* __fastcall InjectCustomZones_Detour(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z)
@@ -23,13 +20,9 @@ char* __fastcall InjectCustomZones_Detour(char* pThis, char* pPtr, unsigned __in
 	DebugSpew("loaded zone %s id %d", zoneShortName, zoneID);
 	return InjectCustomZones_Trampoline(pThis, pPtr, zoneType, zoneID, zoneShortName, zoneLongName, eqStrID, zoneFlags2, x, y, z);
 }
-
 DETOUR_TRAMPOLINE_EMPTY(char* __fastcall InjectCustomZones_Trampoline(char* pThis, char* pPtr, unsigned __int32 zoneType, unsigned __int32 zoneID, char* zoneShortName, char* zoneLongName, unsigned __int32 eqStrID, __int32 zoneFlags2, __int32 x, __int32 y, __int32 z));
-
 // Hooks to EQWorldData::AddZone
 void InjectCustomZones() { EzDetour((((DWORD)0x007DC430 - 0x400000) + baseAddress), InjectCustomZones_Detour, InjectCustomZones_Trampoline); };
-
-
 
 unsigned int __cdecl DisableLuclinModels_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName);
 unsigned int __cdecl DisableLuclinModels_Detour(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName)
@@ -45,8 +38,13 @@ unsigned int __cdecl DisableLuclinModels_Detour(char* lpAppName, char* lpKeyName
 
 	return DisableLuclinModels_Trampoline(lpAppName, lpKeyName, lpDefault, lpReturnedString, nSize, lpFileName);
 }
-
 DETOUR_TRAMPOLINE_EMPTY(unsigned int __cdecl DisableLuclinModels_Trampoline(char* lpAppName, char* lpKeyName, char* lpDefault, char* lpReturnedString, size_t nSize, char* lpFileName));
-
 // Hooks to GetINIFile
 void DisableLuclinModels() { EzDetour((((DWORD)0x00860EF0 - 0x400000) + baseAddress), DisableLuclinModels_Detour, DisableLuclinModels_Trampoline); }
+
+
+char __fastcall DisableCBazaarSearchWnd_Trampoline(char* pThis);
+char __fastcall DisableCBazaarSearchWnd_Detour(char* pThis) { return 0; }
+DETOUR_TRAMPOLINE_EMPTY(char __fastcall DisableCBazaarSearchWnd_Trampoline(char* pThis));
+// Hooks to CBazaarSearchWnd::AboutToShow
+void DisableCBazaarSearchWnd() { EzDetour((((DWORD)0x00636670 - 0x400000) + baseAddress), DisableCBazaarSearchWnd_Detour, DisableCBazaarSearchWnd_Trampoline); };
