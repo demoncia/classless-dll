@@ -900,6 +900,7 @@ void InitHooks()
 	DisableLuclinModels();
 	DisableCMapViewWnd(); // If disabled, you need to remove MQ2Map.cpp/h references too else it'll populate NPC data on a map that doesn't exist
 	InjectCustomZones();
+	InjectCustomRaces();
 	DisableCBazaarSearchWnd();
 
 	DWORD var = (((DWORD)0x008C4CE0 - 0x400000) + baseAddress);

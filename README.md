@@ -4,6 +4,8 @@ This is the dinput.dll included in client. Visit https://github.com/demoncia/cli
 
 
 ## TODO
+- [ ] DisableMQ2ItemInfo
+- [ ] DisableMQ2Labels
 - [ ] DisableCAAwnd
 - [ ] DisableAchievement (not needed, it can't be sent without a proper packet reply from server anyways)
 - [ ] DisableAdventure
